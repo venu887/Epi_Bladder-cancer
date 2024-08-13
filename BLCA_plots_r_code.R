@@ -1,12 +1,15 @@
 #==========
-Section-1: Epigenetic regulator gene aberrations in bladder cancer 
+Section-1: Alterations of epigenetic regulator gene aberrations in TCGA data
 #==========
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[1.1]. plot somatic mutation rate of epigenes in all cancer types
+Figure 1:Predominance of somatic mutations (SM) and copy number variations (CNV: indels) in epigenetic regulator genes (epiRG) across The Cancer Genome Atlas (TCGA) cancers
+Figure 1.1: plot somatic mutation rate of epigenes in all cancer types
 library(ggplot2)
 library(reshape)
 library(reshape2)
 library(patchwork)
+# You can download the list of epigenetic regulator genes (epiRG) from the paper "Epigenetic modulators, modifiers and mediators in cancer aetiology and progression":Nature Reviews Genetics. 2016;17(5):284-99
+# Then calculated the number of somatic mutation rate for each epiRG for all cancer types from TCGA project. 
 myinf1 ="/home/u251079/BLCA_code/BLCA_ms_plots_data/Mutation_Num_All_categories_each_cancer_TCGA.csv"
 Mut_rate = read.csv(myinf1, row.names = 1, header = T)
 class(Mut_rate)
@@ -40,96 +43,15 @@ p2 <- ggplot(data_melt, aes(x = reorder(row_names, -`Mutation rate`), y = reorde
 print(p2)
 library(patchwork)
 p3<-(p1 / p2) + plot_layout(ncol = 1)
-
 print(p3)
+# Save the figure in local directory
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_1/Mut_TCGA.pdf", width = 9, height =5)
-print(p3)
-dev.off()
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[1.2]. Somatic Mutation and CNV pattern pattern in BLCA
+Figure 1.2: Somatic Mutation (SM) and Copy Number Variaction (CNV) pattern pattern in BLCA
 rm(list = ls())
-# Reorder of x axis problem in this two plots
-sm_cnv="/home/u251079/BLCA_code/BLCA_ms_plots_data/BLCA_Epi_sm_cnv.csv" 
-sm_cnv= read.csv(sm_cnv, row.names = 1, header = T)
-sm_cnv<-sm_cnv[order(sm_cnv$Num_SM, decreasing = T),]
-
-sm_cnv1<-melt(sm_cnv)
-names(sm_cnv1)
-
-# aes(x = reorder(Gene, -(value)), y = value, fill=Category)
-p4<-ggplot(sm_cnv1, aes(x =reorder(Gene, -value), y = value, fill=Category)) +
-  geom_bar(data = subset(sm_cnv1, variable =="Num_SM"),aes(y=value,fill=Category), stat="identity", position = "identity")+
-  geom_text(data = subset(sm_cnv1, variable =="Num_SM"),aes(label=value), hjust=0.5, vjust=-0.3, size=2.3, color="black")+
-  theme_classic() + 
-  xlab("")+
-  ylab("Number of Mutations")+ 
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_text(color = "black"),
-        legend.position = c(0.80, 0.60))+
-  coord_cartesian(ylim = c(0, 110), expand = F) # this can remove extra space on the y-axis starting point (Start from ZERO)
-
-print(p4)
-
-
-p4<-ggplot(sm_cnv1, aes(x =Gene, y = value, fill=Category)) +
-  geom_bar(data = subset(sm_cnv1, variable =="Num_SM"),aes(y=value,fill=Category), stat="identity", position = "identity")+
-  geom_text(data = subset(sm_cnv1, variable =="Num_SM"),aes(label=value), hjust=0.5, vjust=-0.3, size=2.3, color="black")+
-  theme_classic() + 
-  xlab("")+
-  ylab("Number of Mutations")+ 
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_text(color = "black"),
-        legend.position = c(0.85, 0.70))+
-  coord_cartesian(ylim = c(0, 110), expand = F) # this can remove extra space on the y-axis starting point (Start from ZERO)
-
-print(p4)
-
-p5<-ggplot(sm_cnv1, aes(x =Gene, y = value, fill=Category))+
-  geom_bar(data = subset(sm_cnv1, variable =="amp.num"),aes(y=value), stat="identity", position = "identity")+
-  geom_text(data = subset(sm_cnv1, variable =="amp.num"),aes(label=value), hjust=0.5, vjust=-0.4, size=2.3)+
-  geom_bar(data = subset(sm_cnv1, variable =="del.num"),aes(y=-(value)), stat="identity", position = "identity")+
-  geom_text(data = subset(sm_cnv1, variable =="del.num"),aes(y=-(value),label=value), hjust=0.5, vjust=1, size=2.3)+
-  theme_classic() + 
-  xlab("")+
-  ylab("Num of CNVs")+
-  scale_y_continuous(breaks=seq(-100,100,10),labels=abs(seq(-100,100,10))) + 
-  geom_hline(yintercept = 0)+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, color="black"),
-        axis.text.y = element_text(color="black"),
-        legend.position = "none")
-
-print(p5)
-# Plot p5 with the same reordered genes as p4
-p5 <- ggplot(sm_cnv1, aes(x = reorder(Gene, -abs(value)), y = value, fill = Category)) +
-  geom_bar(data = subset(sm_cnv1, variable == "amp.num"), aes(y = value), stat = "identity", position = "identity") +
-  geom_text(data = subset(sm_cnv1, variable == "amp.num"), aes(label = value), hjust = 0.5, vjust = -0.4, size = 2.3) +
-  geom_bar(data = subset(sm_cnv1, variable == "del.num"), aes(y = -value), stat = "identity", position = "identity") +
-  geom_text(data = subset(sm_cnv1, variable == "del.num"), aes(y = -value, label = value), hjust = 0.5, vjust = 1, size = 2.3) +
-  theme_classic() + 
-  xlab("") +
-  ylab("Number of CNVs") +
-  scale_y_continuous(breaks = seq(-100, 100, 10), labels = abs(seq(-100, 100, 10))) + 
-  geom_hline(yintercept = 0) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black"),
-        axis.text.y = element_text(color = "black"),
-        legend.position = "none")
-
-print(p5)
-
-# for p1 need to add label to the top of the 
-library(patchwork)
-p6<-(p4/p5) + plot_layout(ncol = 1)
-print(p6)
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_1/SM_CNV_TCGA_BLCA.pdf", width = 10, height =6)
-print(p6)
-dev.off()
-
-
-#@@@@@@@@@@@@@@@@@@ New updated above figure
-# Load necessary libraries
+# calculate the number of SM and CNV for each epiRG for all Bladder cancer patients 
 library(ggplot2)
 library(reshape2)
 library(dplyr)
@@ -177,14 +99,12 @@ combined_plot <- p4 / p5 + plot_layout(ncol = 1)
 
 # Print the combined plot
 print(combined_plot)
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_1/SM_CNV_TCGA_BLCA.pdf", width = 10, height =6)
-print(combined_plot)
-dev.off()
+# Save the figure in local directory
 
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[1.3]. Volcano plot to show the prognostic association of them with ER gene mutation status of TCGA_BLCA patients
+Figure 1.3: Volcano plot to show the prognostic association of them with epiRG mutation status of TCGA_BLCA patients
 rm(list = ls())
 library(tidyverse)
 library(RColorBrewer)
@@ -224,73 +144,24 @@ p7<-ggplot(my_cox1, aes(HR, neg_log10_p,  col=my_cox1$sig, label=my_cox1$delab))
         legend.key.width= unit(0.20, 'cm'),
         legend.background = element_rect(size=0.1, linetype="solid", colour ="black"))
 print(p7)
-# legend.background = element_rect(size=0.3, linetype="solid", colour ="black"),
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_1/1_3_Volcano_plot.pdf", width = 3.5, height =3)
-print(p7)
-dev.off()
+# Save the figure in local directory
 
 
 
 
 
 #===========
-Section-2: Gene signatures for driver ER gene aberrations 
+Section-2: Differentiation and classification of driver epiRG aberration signature scores: 
+# Gene signatures for driver epiRG aberrations
 #===========
-[2.1.1-Supplementary figure] volcano plot between EpiRG signature scores to overall survival
-rm(list = ls())
-library(tidyverse)
-library(RColorBrewer)
-library(ggrepel)
-library(ggplot2)
-library(readr)
-# This data contain adj.p values of surv and cox results using BH method and HR using coxPH
-myin="BLCA_code/BLCA_ms_plots_data/Survival_Cox.csv"
-Cox_uni_results<-read.csv(myin, row.names = 1, header = T)
-my_cox<-Cox_uni_results[1:13,]
-my_cox$sig<-"Not_sig"
-names(my_cox)
-my_cox$sig[my_cox$coxph.p <= 0.05 & my_cox$HR > 0.9]<- "sig"
-my_cox$lab<- gsub("uni.noj__", "", rownames(my_cox))
-
-# to show top gene names on the plot we need to create gene name in seperate column
-my_cox$delab<-ifelse(my_cox$sig == "sig",my_cox$lab , NA)
-my_cox$neg_Log10p<-c(-log10(my_cox$coxph.p))
-
-names(my_cox)
-# add theme
-plot_Sig_cox<-ggplot(my_cox, aes(HR, neg_Log10p,  col=my_cox$sig, label=my_cox$delab)) +
-  geom_vline(xintercept =1, col="#bb0c00", linetype="dashed")+
-  geom_hline(yintercept = 1.30103, col="gray", linetype="dashed")+
-  geom_point(size=1)+
-  scale_color_manual(values = c( "#8080ff","#ff80ff" ),
-                     labels= c("Non Significant", "Significant"))+
-  # coord_cartesian(ylim = c(min(my_cox1$neg_log10_p)-0.05,max(my_cox1$neg_log10_p)+0.2), ylim =c(0,5))+
-  labs(color="Prognostic", 
-       x=expression("Hazard Ratio"), y=expression("-log"[10]*"(p-value)"))+
-  geom_text_repel(max.overlaps = Inf)+
-  theme_classic()+
-  theme(legend.position = c(0.85, 0.40),
-        legend.title = element_text(size = 5),
-        legend.text = element_text(size = 3),
-        axis.text.x = element_text(color = "black"),
-        axis.text.y = element_text(color = "black"),
-        legend.key.height= unit(0.10, 'cm'),
-        legend.key.width= unit(0.20, 'cm'),
-        legend.background = element_rect(size=0.1, linetype="solid", colour ="black"))
-print(plot_Sig_cox)
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/Supp_fig_TCGA_BLCA_Cox.pdf", width = 3.5, height =3)
-print(plot_Sig_cox)
-dev.off() 
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[2.1]. Schematic diagram
+Figure 2.1: Schematic diagram
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[2.2]. Boxplot (Example) → The signatures can distinguish genes with mutations from without (Choi)
+Figure 2.2: Boxplot (Example) → The signatures can distinguish genes with mutations from without in Choi_data (GSE48075) 
 rm(list = ls())
 library(ggpubr)
 library(rstatix)
@@ -319,43 +190,57 @@ p <- ggplot(c_box, aes(Gene, Value, fill = Group)) +
 
 
 print(p)
+# Save the figure in local directory
 
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/Choi_sig_box_plot_ggplot.pdf", width = 3, height =4)
-print(p)
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Figure 2.3: ROC of epiRG-aber status to signature scores
+# 1 Choi_data
+rm(list = ls())library(ROC)
+library(survival)
+library(pROC)
+
+myinf1<-"/home/u251079/BLCA_code/BLCA_ms_plots_data/Figure2_3.csv"
+myinf2 = "/mount/ictr1//chenglab/cc59/PubDat/Cancer/Bladder/Choi_GSE48277/Clinical_info_GPL6947.txt" 
+
+data <- read.csv(myinf1,row.names=1, header = T)
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+info = info[!is.na(info$fgfr3.mutation), ]
+
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+names(info)[2:5]
+
+info<-info[,2:5]
+names(data)
+
+# Create ROC curves 
+roc_mut1 <- roc(response = info$p53.mutation, predictor = data$TP53__MUT)
+auc1<-auc(roc_mut1); print(auc1)
+
+roc_mut2 <- roc(response = info$fgfr3.mutation, predictor = data$FGFR3__MUT)
+auc2<-auc(roc_mut2); print(auc2)
+
+roc_mut3 <- roc(response = info$rb1.mutation, predictor = data$RB1__MUT)
+auc3<-auc(roc_mut3); print(auc3)
+# Save the figure in local directory
+pdf("ROC_Chao_data_test.pdf", width = 5, height =5)
+par(pty="s")
+plot.roc(roc_mut1, col = "black", lwd = 2, main = "Choi_data", legacy.axes = TRUE, 
+         xlab = "1-Specificity (false positive)",
+         ylab = "Sensitivity (true positive)")  
+plot.roc(roc_mut2, add = TRUE, col = "blue", lwd = 2)
+plot.roc(roc_mut3, add = TRUE, col = "red", lwd = 2)
+
+legend("bottomright", legend = c("TP53_MUT (0.73)", "FGFR3_mut (0.67)", "RB1_mut (0.77)"),
+       col = c("black","blue","red"), lwd = 2, box.col ="black", cex = 1)
 dev.off() 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-[2.3]. Boxplot (Example) → The signatures can distinguish genes with mutations from without using CCLE data
-rm(list = ls())
-library(ggpubr)
-inp="/home/u251079/BLCA_code/BLCA_ms_plots_data/2_C_CCLE_box.csv" 
-ER_sig4=read.csv(inp,row.names = 1, header = T)
-
-p1_value <- wilcox.test(Sig_EP300_mut ~ CREBBP_mut, data = dat1, alternative = "g")$p.value
-
-
-p <- ggplot(ER_sig4, aes(Var2, value.1, fill = value)) +
-  geom_boxplot(position = position_dodge(width = 0.75), width = 0.6, outlier.colour = "black") +  # Add position_dodge to create a gap
-  geom_jitter(position = position_dodge(width = 0.75), alpha = 0.4, color = "blue") +  # Add color to jitter points
-  coord_cartesian(ylim = c(min(ER_sig4$value.1), max(ER_sig4$value.1) + 1)) +
-  labs(title = "ER_sig in CCLE bladder cancer cell lines", x = NULL, y = "ER_signature scores") +
-  stat_compare_means(method = "wilcox.test", label = "p.format") +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, color = "black"),
-        axis.text.y = element_text( color = "black"),
-        legend.position = c(0.80, 0.70), legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 10)) +
-  scale_x_discrete(labels = c("FGFR3", "KDM6A", "RB1", "TP53"))
-
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/CCLE_ER_genes_Boxplots.pdf", width = 6, height =4)
-print(p)
-dev.off() 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-[2.4].Boxplot → CREBP and P300 signatures can cross- predict each others (Exp: Sig.score of CREBP significantly predict P300 Mut vs Wild?) 
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Figure 2.4: Boxplot → CREBP and P300 signatures can cross- predict each others 
+# Exp: Sig.score of CREBP significantly predict P300 Mut vs Wild
 rm(list = ls())
 in1="/home/u251079/BLCA_code/BLCA_ms_plots_data/Box_sec_2_TCGA.csv"
 # Load the necessary library
@@ -366,27 +251,6 @@ dat1=as.data.frame(ifelse(dat[,7:12] == 1, "Mut", "Wild"))
 dat1=cbind(dat[,1:6], dat1)
 colnames(dat1)
 # Sig.score of CREBBP significantly predict P300 Mut vs Wild
-p_value <- wilcox.test(Sig_CREBBP_mut ~ EP300_mut, data = dat1, alternative = "g")$p.value
-p_value <-round(p_value,3)
-p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut)) +
-  geom_boxplot(width = 0.7, lwd = 1, aes(color = EP300_mut), notch = TRUE, notchwidth = 0.5) +
-  geom_jitter(width = 0.2, size = 0.5) +
-  labs(x = "EP300", y = "Signature CREBBP") +
-  ylim(min(dat1$Sig_CREBBP_mut), max(dat1$Sig_CREBBP_mut) + 10) +
-  geom_text(aes(label = paste(signif(p_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_CREBBP_mut) + 4, size = 5, vjust = -1) +
-  theme_classic() +
-  scale_x_discrete(expand = c(0.25, 0.25)) +
-  theme(axis.text.x = element_text(color="black"),
-        axis.text.y = element_text(color="black"),
-        legend.position = "none",
-        plot.title = element_text(hjust = 0.5, size = 10, color = "black"),
-        text = element_text(family = "sans", face = "plain")  # Set font style to plain
-  )
-
-print(p)
-
-#@@@@@@@@@@@@@ Jan 23 2024
 p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut, fill = EP300_mut)) +
   geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
   labs(x = "EP300", y = "Signature CREBBP") +
@@ -402,29 +266,8 @@ p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut, fill = EP300_mut)) +
         text = element_text(family = "sans", face = "plain"))  # Set font style to plain
 
 print(p)
-#@@@@@@@@@@@@@
 
-
-#Sig.score of EP300 significantly predict CREBBP Mut vs Wild
-#__________________________________________________________
-p1_value <- wilcox.test(Sig_EP300_mut ~ CREBBP_mut, data = dat1, alternative = "g")$p.value
-p1_value <-round(p1_value,3)
-# 
-p1<- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut))+
-  geom_boxplot(width=0.7, lwd=1,aes(color=CREBBP_mut),notch = TRUE, notchwidth = 0.5)+
-  geom_jitter(width = 0.2, size=0.5)+ labs(x="CREBBP", y="Signature EP300")+
-  ylim(min(dat1$Sig_EP300_mut), max(dat1$Sig_EP300_mut) + 10)+
-  geom_text(aes(label = paste(signif(p1_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_EP300_mut) + 4, size = 5, vjust = -1)+
-  theme_classic()+
-  scale_x_discrete(expand = c(0.25, 0.25))+
-  theme(axis.text.x = element_text(color="black"),
-        axis.text.y = element_text(color="black"),
-        legend.position="none",
-        plot.title = element_text(hjust = 0.5, size = 10))
-print(p1)
-
-#@@@@@@@@@@@@@ Jan 23 2024
+# Sig.score of P300 significantly predict CREBBP Mut vs Wild
 p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut, fill=CREBBP_mut))+
   geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
   labs(x="CREBBP", y="Signature EP300")+
@@ -438,250 +281,17 @@ p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut, fill=CREBBP_mut))+
         legend.position="none",
         plot.title = element_text(hjust = 0.5, size = 10))
 print(p1)
-#@@@@@@@@@@@@@
-
-
-
-
-#Sig.score of Signature score of CHD6_mut can predicts with CREBBP amp vs wild
-#__________________________________________________________
-p3_value <- wilcox.test(Sig_CHD6_mut ~ CHD6_amp, data = dat1, alternative = "g")$p.value
-p3_value <-round(p3_value,3)
-# 
-p3<-ggplot(dat1, aes(x=CHD6_amp, y=Sig_CHD6_mut))+
-  geom_boxplot(width=0.7, lwd=1,aes(color=CHD6_amp),notch = TRUE, notchwidth = 0.5)+
-  geom_jitter(width = 0.2, size=0.5)+ labs(x="CHD6", y="Signature CHD6_mut")+
-  ylim(min(dat1$Sig_CHD6_mut), max(dat1$Sig_CHD6_mut) + 10)+
-  geom_text(aes(label = paste(signif(p3_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_CHD6_mut) + 4, size = 5, vjust = -1)+
-  theme_classic()+scale_x_discrete(expand = c(0.25, 0.25))+
-  theme(axis.text.x = element_text(color="black"),
-        axis.text.y = element_text(color="black"),
-        legend.position="none",plot.title = element_text(hjust = 0.5, size = 10))+
-  scale_x_discrete(labels=c("amp", "wild"))
-
-print(p3)
-
-#@@@@@@@@@@@@@ Jan 23 2024
-p3 <- ggplot(dat1, aes(x=CHD6_amp, y=Sig_CHD6_mut, fill=CHD6_amp))+
-  geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
-  labs(x="CHD6", y="Signature CHD6_mut")+
-  ylim(min(dat1$Sig_CHD6_mut), max(dat1$Sig_CHD6_mut) + 10)+
-  geom_text(aes(label = paste(signif(p3_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_CHD6_mut) + 4, size = 5, vjust = -1)+
-  theme_classic()+scale_x_discrete(expand = c(0.25, 0.25))+
-  theme(axis.text.x = element_text(color="black"),
-        axis.text.y = element_text(color="black"),
-        legend.position="none",plot.title = element_text(hjust = 0.5, size = 10))+
-  scale_x_discrete(labels=c("amp", "wild"))
-
-print(p3)
-
-
-
-##___________Plot and save as one big image----------
-library(patchwork)
-p4<-p+ p1+ p3+ plot_annotation(title= "TCGA_BLCA", tag_levels = "I")+plot_layout(nrow = 1)
-print(p4)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/2_4_sig_TCGA_BLCA_box_plot_new.pdf", width = 6, height =5)
-print(p4)
-dev.off() 
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[2.5] Dot Plots
-# Dot plot TP53
-inf_data="/home/u251079/BLCA_code/BLCA_ms_plots_data/2_7_dot_tp53.csv"
-data1= read.csv(inf_data, header = T, row.names = 1)
-data1<-na.omit(data1)
-
-p1 <- ggplot(data1, aes(reorder(protein_change, -TP53_sig_score), TP53_sig_score, color=Mut_type)) +
-  geom_point(na.rm = T)+
-  labs(title = "The signature scores of each individual TP53 mutation on protein change", x = NULL, y = "TP53 mut sig.score")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), plot.title = element_text(size = 10, hjust = 0.5))
-
-print(p1)
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/2_7_TCGA_dot_plot_tp53.pdf", width = 20, height =4)
-print(p1)
-dev.off()
-
-# Dot plot KDM6A
-inf_data1="/home/u251079/BLCA_code/BLCA_ms_plots_data/2_8_dot_kdm6a.csv"
-data2= read.csv(inf_data1, row.names = 1, header = T)
-p2 <- ggplot(data2, aes(reorder(protein_change, -KDM6A_sig_score), KDM6A_sig_score, color=Mut_type)) +
-  geom_point(na.rm = T)+
-  labs(title = "The signature scores of each individual KDM6A mutation on protein change", x = NULL, y = "KDM6A mut sig.score")+
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), plot.title = element_text(size = 10, hjust = 0.5))
-
-print(p2)
-library(ggpubr)
-# p3<-ggarrange(p1, p2, ncol = 1, nrow = 2)
-# print(p3)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/2_8_TCGA_dot_plot_kdm6a.pdf", width = 8, height =4)
-print(p2)
-dev.off()
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Box plots of categories of Somatic Mutations in TP53 and KMD6A 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-rm(list = ls())
-#Box plots
-inf1= "/home/u251079/BLCA_code/BLCA_ms_plots_data/2_7_dot_tp53.csv"
-myinf1 = "/home/u251079/r_program/TCGA_BLCA__epiGene_iRAS_09_17.txt"
-data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
-cnum = ncol(data)/2
-data = data[, 1:cnum]
-tmp = colnames(data)
-tmp = gsub("\\.ES", "", tmp)
-colnames(data) = tmp
-cnum = ncol(data)/2
-dat1 = data[,1:cnum]
-dat2 = data[, (cnum+1):(2*cnum)]
-xx = dat1-dat2
-colnames(xx) = gsub("\\.up", "", colnames(dat1))
-data = xx
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# Convert all the signature scores in data to Z-scores
-sig_mean = apply(data, 2, mean, na.rm=T)
-sig_sd = apply(data, 2, sd, na.rm=T)
-
-# Initialize a matrix for Z-datas
-z_scores = matrix(0, nrow = nrow(data), ncol = ncol(data))
-row.names(z_scores)<- rownames(data)
-colnames(z_scores)<-colnames(data)
-# Calculate Z-datas for each column
-for (k in 1:ncol(data)) {
-  cat("\r", k)
-  z_scores[, k] = (data[, k] - sig_mean[k]) / sig_sd[k]
-}
-class(z_scores)
-z_scores<-as.data.frame(z_scores)
-data=z_scores
-
-
-
-#@@@@@@@@@@@@@@@@@@
-# Box plot TP53
-data1= read.csv(inf1, header = T, row.names = 1)
-
-which(data1$ID %in% rownames(data))
-table(data1$Mut_type)
-# Instead of Wild type extract the data only have Mut type then plot 
- data$TP53_Mut_type<- ifelse(rownames(data) %in%data1$ID , data1$Mut_type, "Wild")
-
-data_tp53=data[,c("uni.noj__TP53_mut","TP53_Mut_type")]
-library(reshape2)
-library(ggpubr)
-names(data_tp53)[1]<-"TP53_mut"
-table(data_tp53$TP53_Mut_type)
-
-se=mean(data_tp53$TP53_mut)
-se1=sd(data_tp53$TP53_mut)
-data_tp53$Z_score<-c((data_tp53$TP53_mut-se)/se1)
-
-# se <- c("5'Flank","Frame_Shift_Del", "Frame_Shift_Ins", "In_Frame_Del")
-# se1 <- which(data_tp53$TP53_Mut_type %in% se)
-# data_tp53 <- data_tp53[!data_tp53$TP53_Mut_type %in% se, ]
-se <- c("5'Flank", "Frame_Shift_Del", "Frame_Shift_Ins", "In_Frame_Del")
-data_tp53$TP53_Mut_type <- ifelse(data_tp53$TP53_Mut_type %in% se, "other", data_tp53$TP53_Mut_type)
-# remove Wild
-se<-which(data_tp53$TP53_Mut_type%in% "Wild")
-data_tp53<- data_tp53[-se,]
-
-
-# Create a summary table with the counts of samples for each TP53_Mut_type
-sample_counts <- table(data_tp53$TP53_Mut_type)
-
-# Create the ggboxplot
-p <- ggboxplot(data = data_tp53,
-               x = "TP53_Mut_type",
-               y = "Z_score",
-               color = "TP53_Mut_type",
-               palette = "jco",
-               legend = "none") +
-  ylim(min(data_tp53$Z_score), max(data_tp53$Z_score)) +
-  #geom_hline(yintercept = mean(data_tp53$TP53_mut), linetype = 2) +
-   # stat_compare_means(method = "anova") +
-   # stat_compare_means(label = "p.signif", method = "wilcox.test",
-   #                    ref.group = ".all.") +
-  labs(title = "TCGA_BLCA_TP53", x = NULL, y = "Signature_TP53_mut (Z-Score)") +
-  theme(plot.title = element_text(size = 10, hjust = 0.5, color = "black"), 
-        axis.title.y = element_text(size = 10,color = "black"),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=8, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black")) +
-  scale_x_discrete(labels = paste(names(sample_counts), "\n(N =", sample_counts, ")"))
-
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/TP53_Box_SM_categories.pdf", width = 3, height =3, units = "in", res = 900)
-print(p)
-dev.off() 
-
-#@@@@@@@@@@@@@@@@@@@@@@
-# Box plots KDM6A
-myinf2= "/home/u251079/BLCA_code/BLCA_ms_plots_data/2_8_dot_kdm6a.csv"
-data2= read.csv(myinf2,header = T, row.names = 1)
-which(data2$ID %in% rownames(data))
-
-data$KDM6A_Mut_type<- ifelse(rownames(data) %in%data2$ID , data2$Mut_type, "Wild")
-
-data_kdm6A=data[,c("uni.noj__KDM6A_mut","KDM6A_Mut_type")]
-library(reshape2)
-library(ggpubr)
-names(data_kdm6A)[1]<-"KDM6A_mut"
-table(data_kdm6A$KDM6A_Mut_type)
-
-
-# Create a summary table with the counts of samples for each Mut_type
-sample_counts <- table(data_kdm6A$KDM6A_Mut_type)
-
-# Remove Wild
-se=which(data_kdm6A$KDM6A_Mut_type %in% "Wild")
-data_kdm6A<- data_kdm6A[-se,]
-
-# Create the ggboxplot
-p1 <- ggboxplot(data = data_kdm6A,
-                x = "KDM6A_Mut_type",
-                y = "KDM6A_mut",
-                color = "KDM6A_Mut_type",
-                palette = "jco",
-                legend = "none") +
-  ylim(min(data_kdm6A$KDM6A_mut), max(data_kdm6A$KDM6A_mut)) +
-  #geom_hline(yintercept = mean(data_kdm6A$KDM6A_mut), linetype = 2) +
-  # stat_compare_means(method = "anova", label.y = 120) +
-  # stat_compare_means(label = "p.signif", method = "wilcox.test",
-  #                    ref.group = ".all.") +
-  labs(title = "TCGA_BLCA_KDM6A", x = NULL, y = "Signature_KDM6A_mut (Z-score)") +
-  theme(plot.title = element_text(size = 10, hjust = 0.5, color = "black"), 
-        axis.title.y = element_text(size = 10,color = "black"),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size=8, color = "black"),
-        axis.text.y = element_text(size = 10, color = "black")) +
-  scale_x_discrete(labels = paste(names(sample_counts), "\n(N =", sample_counts, ")"))
-
-print(p1)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/KDM6A_Box_SM_categories.pdf", width = 3.5, height =3)
-print(p1)
-dev.off()
 
 library(patchwork)
-p2<- p+p1+plot_layout(ncol = 2)
-print(p2)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_2/Box_plot_SM_categories.pdf", width = 6, height =4)
-print(p2)
-dev.off() 
-
+p4<-p+ p1+ plot_annotation(title= "TCGA_BLCA", tag_levels = "I")+plot_layout(nrow = 1)
+print(p4)
+# Save the figure in local directory
 
 
 #===============
-Section-3:Association of driver gene signatures with prognosis 
+Section-3:Association of driver gene signatures with prognosis using independent datasets
 #===============
-[3.1].Volcano plot (Global) → X-HR vs. -log10(P) for all signatures
-
+[3.1].Volcano plot (Global) X-HR vs. -log10(P) for all signatures 
 rm(list = ls())
 library(ggrepel)
 library(tidyverse)
