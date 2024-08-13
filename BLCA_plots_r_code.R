@@ -1,5 +1,5 @@
 #==========
-Section-1: Alterations of epigenetic regulator gene aberrations in TCGA data
+Section-1: Alterations of epigenetic regulator gene aberrations in TCGA data   
 #==========
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 Figure 1:Predominance of somatic mutations (SM) and copy number variations (CNV: indels) in epigenetic regulator genes (epiRG) across The Cancer Genome Atlas (TCGA) cancers
@@ -306,33 +306,6 @@ se= c("uni.noj__TP53_del","uni.noj__CHD6_ampmut","uni.noj__CHD7_ampmut", "uni.no
 # Remove the rows with names matching the values in 'se'
 my_cox_global <- my_cox_global[!(rownames(my_cox_global) %in% se), ]
 rownames(my_cox_global)<-gsub("uni.noj__","", rownames(my_cox_global))
-my_cox_global$GSE13507_coxph.p_Log10<-c(-log10(my_cox_global$GSE13507_coxph.p))
-my_cox_global$Sjodahl_coxph.p_Log10<-c(-log10(my_cox_global$GSE32894_coxph.p))
-
-my_cox_global$GSE13507_level<-ifelse(my_cox_global$GSE13507_coxph.p_Log10 >=2, "Sig", NA)
-my_cox_global$GSE13507_labs1<-ifelse(my_cox_global$GSE13507_coxph.p_Log10 >=2, rownames(my_cox_global),NA)
-
-my_cox_global<-my_cox_global %>% 
-  mutate(Exp_GSE13507= case_when(GSE13507_coxph.p_Log10 >=2 & GSE13507_HR <1 ~ "Down",
-                        GSE13507_coxph.p_Log10 >=2 & GSE13507_HR >1 ~ "Up"))
-
-pl1<-ggplot(my_cox_global, aes(GSE13507_HR, GSE13507_coxph.p_Log10)) +
-  geom_vline(xintercept = 1, color = "blue", linetype = "dashed") +
-  geom_hline(yintercept = 2, color = "darkred", linetype = "dashed") +
-  geom_point(aes(color=Exp_GSE13507) ,size=2)+
-  coord_cartesian(xlim = c(0, 2.5), ylim = c(min(my_cox_global$GSE13507_coxph.p_Log10), 
-                                             max(my_cox_global$GSE13507_coxph.p_Log10)+0.5))+
-  geom_text_repel(aes(label=GSE13507_labs1),size=2)+
-  theme_classic()+
-  labs(title = "GSE13507 driver ER signatures",  y=expression("-log"[10]*"(p-value)"), x="Hazard Ratio")+
-  scale_color_manual(values = c("dodgerblue3", "firebrick3"))+
-  theme( plot.title = element_text(size=10, hjust = 0.5),
-         legend.position = "none")
-  
-print(pl1)
-
-
-#-------
 my_cox_global$GSE32894_level<-ifelse(my_cox_global$Sjodahl_coxph.p_Log10 >=2, "Sig", NA)
 my_cox_global$GSE32894_labs2<-ifelse(my_cox_global$Sjodahl_coxph.p_Log10 >=2, rownames(my_cox_global),NA)
 # In inside the mutate dont use "<-" this symbol before case_when, it gives us NULL colname
@@ -353,13 +326,6 @@ pl2<-ggplot(my_cox_global, aes(GSE32894_HR, Sjodahl_coxph.p_Log10)) +
   geom_text_repel(aes(label=GSE32894_labs2), size=2)
 print(pl2)
 
-library(patchwork)
-p2<-p+p1+plot_layout(ncol = 2)
-print(p2)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_1_Global_Vol_plot.pdf", width = 8, height =6)
-print(p2)
-dev.off() 
 
 #@@@@@@@@@@@ COX HZ
 
