@@ -297,7 +297,7 @@ print(transformed_score)
 dat1$Sig_EP300_mut_transformed_score<-transformed_score
 
 p1_value <- wilcox.test(Sig_EP300_mut_transformed_score ~ EP300_mut, data = dat1, alternative = "g")$p.value
-p1_value <-round(p_value,9)
+p1_value <-round(p1_value,9)
 
 p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut_transformed_score, fill=CREBBP_mut))+
   geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
