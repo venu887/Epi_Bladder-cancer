@@ -167,13 +167,14 @@ library(ggpubr)
 library(rstatix)
 inpt="/home/u251079/BLCA_code/BLCA_ms_plots_data/chao_box.csv"
 c_box<-read.csv(inpt, header = T)
+names(c_box)
 table(c_box$Group~c_box$Gene)
-p <- ggplot(c_box, aes(Gene, Value, fill = Group)) +
+p <- ggplot(c_box, aes(Gene, transformed_score, fill = Group)) +
   geom_boxplot(position = position_dodge(width = 0.75), width = 0.6, outlier.colour = "gray") +  # Add position_dodge to create a gap
   geom_jitter(position = position_dodge(width = 0.75), alpha = 0.4, color = "gray") +  # Add color to jitter points
-  coord_cartesian(ylim = c(min(c_box$Value), max(c_box$Value) + 10)) +
+  coord_cartesian(ylim = c(min(c_box$transformed_score), max(c_box$transformed_score) + 1)) +
   labs(title = "Choi_signatures", x = NULL, y = "Signature Score") +
-  stat_compare_means(method = "wilcox.test", label = "p", label.y = max(c_box$Value) + 5) +
+  stat_compare_means(method = "wilcox.test", label = "p.signif", label.y = max(c_box$transformed_score) + 0.5) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, color = "black"),
         axis.text.y = element_text( color = "black"),
@@ -190,6 +191,8 @@ p <- ggplot(c_box, aes(Gene, Value, fill = Group)) +
 
 
 print(p)
+
+
 # Save the figure in local directory
 
 
@@ -251,12 +254,26 @@ dat1=as.data.frame(ifelse(dat[,7:12] == 1, "Mut", "Wild"))
 dat1=cbind(dat[,1:6], dat1)
 colnames(dat1)
 # Sig.score of CREBBP significantly predict P300 Mut vs Wild
-p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut, fill = EP300_mut)) +
+###transform scores If X is the current score, please use the following transformation:   X' = X/sd(abs(X))
+# Assuming xx is your list of scores
+xx <- dat1$Sig_CREBBP_mut
+abs.xx <- abs(xx)
+sd_abs_xx <- sd(abs.xx)
+transformed_score <- xx / sd_abs_xx
+max(transformed_score)
+# Print the transformed scores
+print(transformed_score)
+dat1$Sig_CREBBP_mut_transformed_score<-transformed_score
+
+p_value <- wilcox.test(Sig_CREBBP_mut_transformed_score ~ EP300_mut, data = dat1, alternative = "g")$p.value
+p_value <-round(p_value,3)
+
+p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut_transformed_score, fill = EP300_mut)) +
   geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
   labs(x = "EP300", y = "Signature CREBBP") +
-  ylim(min(dat1$Sig_CREBBP_mut), max(dat1$Sig_CREBBP_mut) + 10) +
+  ylim(min(dat1$Sig_CREBBP_mut_transformed_score), max(dat1$Sig_CREBBP_mut_transformed_score) + 0.5) +
   geom_text(aes(label = paste(signif(p_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_CREBBP_mut) + 4, size = 5, vjust = -1) +
+            x = 1.5, y = max(dat1$Sig_CREBBP_mut_transformed_score), size = 5, vjust = -1) +
   theme_classic() +
   scale_x_discrete(expand = c(0.25, 0.25)) +
   theme(axis.text.x = element_text(color = "black"),
@@ -268,12 +285,26 @@ p <- ggplot(dat1, aes(x = EP300_mut, y = Sig_CREBBP_mut, fill = EP300_mut)) +
 print(p)
 
 # Sig.score of P300 significantly predict CREBBP Mut vs Wild
-p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut, fill=CREBBP_mut))+
+###transform scores If X is the current score, please use the following transformation:   X' = X/sd(abs(X))
+# Assuming xx is your list of scores
+xx <- dat1$Sig_EP300_mut
+abs.xx <- abs(xx)
+sd_abs_xx <- sd(abs.xx)
+transformed_score <- xx / sd_abs_xx
+max(transformed_score)
+# Print the transformed scores
+print(transformed_score)
+dat1$Sig_EP300_mut_transformed_score<-transformed_score
+
+p1_value <- wilcox.test(Sig_EP300_mut_transformed_score ~ EP300_mut, data = dat1, alternative = "g")$p.value
+p1_value <-round(p_value,9)
+
+p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut_transformed_score, fill=CREBBP_mut))+
   geom_boxplot(width = 0.7, lwd = 1, color = "black", notch = TRUE, notchwidth = 0.5) +  # Set black border here
   labs(x="CREBBP", y="Signature EP300")+
-  ylim(min(dat1$Sig_EP300_mut), max(dat1$Sig_EP300_mut) + 10)+
+  ylim(min(dat1$Sig_EP300_mut_transformed_score), max(dat1$Sig_EP300_mut_transformed_score) + 0.5)+
   geom_text(aes(label = paste(signif(p1_value, digits = 4))),
-            x = 1.5, y = max(dat1$Sig_EP300_mut) + 4, size = 5, vjust = -1)+
+            x = 1.5, y = max(dat1$Sig_EP300_mut_transformed_score), size = 5, vjust = -1)+
   theme_classic()+
   scale_x_discrete(expand = c(0.25, 0.25))+
   theme(axis.text.x = element_text(color="black"),
@@ -281,7 +312,6 @@ p1 <- ggplot(dat1, aes(x=CREBBP_mut, y=Sig_EP300_mut, fill=CREBBP_mut))+
         legend.position="none",
         plot.title = element_text(hjust = 0.5, size = 10))
 print(p1)
-
 library(patchwork)
 p4<-p+ p1+ plot_annotation(title= "TCGA_BLCA", tag_levels = "I")+plot_layout(nrow = 1)
 print(p4)
