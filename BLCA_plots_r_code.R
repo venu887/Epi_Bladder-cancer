@@ -357,31 +357,8 @@ pl2<-ggplot(my_cox_global, aes(GSE32894_HR, Sjodahl_coxph.p_Log10)) +
 print(pl2)
 
 
-#@@@@@@@@@@@ COX HZ
-
-mycox_HZ<-my_cox_global[,c(5,10)]
-
-print(mycox_HZ)
-
-                GSE13507_HR GSE32894_HR
-ARID1A_mut        1.1294787   0.8649591
-CHD6_mut          1.6940169   1.8821384
-CHD7_mut          1.8365340   1.6887167
-CREBBP_mut        1.6529939   2.1597317
-EP300_mut         2.0594361   1.7753684
-KDM6A_mut         0.6003847   0.4797199
-TP53_mut          2.1802777   2.6557218
-CHD6_amp          0.7304972   0.5742282
-CHD7_amp          0.7657386   0.5984827
-PRDM9_amp         1.8774413   1.9728366
-CHD3_del          0.6331398   0.3912820
-CREBBP_del        1.1946442   0.9875792
-HDAC4_del         0.8648735   0.6198821
-PHF23_del         0.6460149   0.3877488
-EP300CREBBP_mut   1.8707262   1.8943059
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Figure 3B to 3I All KM plots
 rm(list = ls())
 library(survival)
 library(ggplot2)
@@ -395,7 +372,7 @@ input2= "/home/u251079/BLCA_code/BLCA_ms_plots_data/GSE13507_data_for_KM.csv"
 dat1= read.csv(input1, row.names = 1, header = T)
 dat2= read.csv(input2, row.names = 1, header = T)
 
-[3.1.a]. Supplementary= KM plot (E) → EP300CREBBP_mut (in 2 datasets)
+Figure SF2: Supplementary= KM plot (E) → EP300CREBBP_mut (in 2 datasets)
                  GSE13507_HR GSE32894_HR
 EP300CREBBP_mut   1.8707262   1.8943059
 
@@ -802,34 +779,9 @@ library(patchwork)
 KM_plots<-p1$plot+p2$plot+p3$plot+p4$plot+p5$plot+p6$plot+p7$plot+p8$plot+plot_layout(ncol = 2, nrow = 4)
 print(KM_plots)
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/8_KM_plot.pdf", width =10 , height =15)
-print(KM_plots)
-dev.off() 
-
-#@@@@@@@@@@ 01-09-2024
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3A_Test.pdf", width =3.5 , height =3.5)
-print(pl2)
-dev.off() 
 
 
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3B_Test.pdf", width =3.5 , height =3.5)
-print(p2)
-dev.off() 
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3C_Test.pdf", width =3.5 , height =3.5)
-print(p4)
-dev.off() 
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3D_Test.pdf", width =3.5 , height =3.5)
-print(p6)
-dev.off() 
-
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[3.5].Forest plot → CREBBP after adjusting for clinical factors (in 1 dataset)
+Figure: [4]#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 rm(list = ls())
 library(survival)
 library(survminer)
@@ -837,36 +789,37 @@ library(survminer)
 inp="/home/u251079/BLCA_code/BLCA_ms_plots_data/GSE13507_for_Box_Forest.csv"
 info=read.csv(inp, row.names = 1, header=T)
 colnames(info)<-gsub("uni.noj__", "", colnames(info))
-
-names(info)
-fit.coxph <- coxph(Surv(t.surv, e.surv) ~CREBBP_mut+ SEX + AGE + invasiveness+ Grade+ T_stage, data=info)
-p<-ggforest(fit.coxph, info, main = "Hazard ratio_GSE13507")
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_5_Forest_plot.pdf", width = 7, height =5)
-print(p)
-dev.off()
+###transform scores If X is the current score, please use the following transformation:   X' = X/sd(abs(X))
+# Assuming xx is your list of scores
+xx <- info$CREBBP_mut
+abs.xx <- abs(xx)
+sd_abs_xx <- sd(abs.xx)
+transformed_score <- xx / sd_abs_xx
+max(transformed_score)
+# Print the transformed scores
+print(transformed_score)
+info$CREBBP_mut_transformed<-transformed_score
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[3.6].Boxplot → association with invasiveness CREBBP (muscle-invasive vs. non-invasive)
+[4.A].Boxplot → association with invasiveness CREBBP (muscle-invasive vs. non-invasive)
 # GSE13507_data 
 se=as.factor(info$invasiveness)
 table(se)
 
-plot_violin<-ggplot(info, aes(as.factor(invasiveness), CREBBP_mut))+
+plot_violin<-ggplot(info, aes(as.factor(invasiveness), CREBBP_mut_transformed))+
   geom_violin(aes(fill=as.factor(invasiveness)), scale = "width")+
   geom_boxplot(width=0.3, lwd=0.5)+
-  labs(title="GSE13507", x=NULL,y="Signature CREBBP_mut")+
+  labs(title="GSE13507-Tumor Stages", x=NULL,y="Signature CREBBP_mut")+
   geom_jitter(position = position_dodge(width = 0.1), alpha = 0.2, color = "blue")+
   stat_summary(fun.y=median, geom="point", size=2, color="red")+
   stat_compare_means(method = "wilcox.test", label = "p.format") +
-  coord_cartesian(ylim = c(min(info$CREBBP_mut), max(info$CREBBP_mut)+5))+
+  coord_cartesian(ylim = c(min(info$CREBBP_mut_transformed), max(info$CREBBP_mut_transformed)+1))+
   theme_bw()+
   theme(legend.position = "none", 
         plot.title = element_text(hjust = 0.5, size=10),
         axis.text.x = element_text(color = "black"),
         axis.text.y = element_text(color = "black"))+
-  scale_x_discrete(labels = c("Non Muscle-Inv (n=103)", "Muscle-Inv (n=62)"))
+  scale_x_discrete(labels = c("Non Muscle-Inv \n (n=103)", "Muscle-Inv \n (n=62)"))
 
 print(plot_violin)
 
@@ -874,20 +827,10 @@ pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_6_violin_plot.pdf", width
 print(plot_violin)
 dev.off()
 
-3.7.Boxplot → CREBBP in different stages
-# with "GSE13507 data with 165 patients
-'''plot_box<-ggplot(info, aes(T_stage, CREBBP_mut, fill=factor(T_stage)))+
-  geom_boxplot()+
-  labs(title ="GSE13507", x="Tumor Stages", y="Signature CREBBP_mut")+
-  coord_cartesian(ylim = c(min(info$CREBBP_mut), max(info$CREBBP_mut)+8))+
-  geom_hline(yintercept = mean(info1$CREBBP_mut), linetype = 2) +
-  stat_compare_means(method = "anova", label.y = 64) +        # Add global ANOVA p-value
-  stat_compare_means(label = "p.signif", method = "wilcox.test",
-                     ref.group = ".all.") +
-  theme_classic()+
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5, size = 10))
-print(plot_box)'''
 
+
+
+[4.B]:Boxplot → association with Stages and signature scores of CREBBP
 library(ggplot2)
 table(info$T_stage, info$invasive)
 # Create a factor with custom levels for T_stage
@@ -899,203 +842,83 @@ sample_counts <- info %>%
   summarise(N = n())
 
 # Create the reordered box plot
-plot_box<- ggplot(info, aes(T_stage1, CREBBP_mut, fill = factor(T_stage1))) +
+plot_box<- ggplot(info, aes(T_stage1, CREBBP_mut_transformed, fill = factor(T_stage1))) +
   geom_boxplot() +
-  labs(title = "GSE13507", x = "Tumor Stages", y = "Signature CREBBP_mut") +
-  coord_cartesian(ylim = c(min(info$CREBBP_mut), max(info$CREBBP_mut) + 8)) +
-  geom_hline(yintercept = mean(info$CREBBP_mut), linetype = 2) +
-  stat_compare_means(method = "anova", label.y = 64) +
+  labs(title = "GSE13507_Tumor Stages", x = NULL, y = "Signature CREBBP_mut") +
+  coord_cartesian(ylim = c(min(info$CREBBP_mut_transformed), max(info$CREBBP_mut_transformed)+2)) +
+  geom_hline(yintercept = mean(info$CREBBP_mut_transformed), linetype = 2) +
+  stat_compare_means(method = "anova", label.y = 6.5) +
   stat_compare_means(label = "p.signif", method = "wilcox.test", ref.group = ".all.",
-                     label.y = c(27, 50, 58, 58, 50)) +
+                     label.y = c(3.5, 5, 5.5, 5.7, 5)) +
   theme_classic() +
   theme(legend.position = "none", 
         axis.text.x = element_text(color = "black"),
         plot.title = element_text(hjust = 0.5, size = 10))+
-  scale_x_discrete(labels = c("Ta (n=24)","T1 (n=80)", "T2 (n=31)", "T3 (n=19)", "T4 (n=11)"))
-                   
+  scale_x_discrete(labels = c("Ta \n (n=24)","T1 \n (n=80)", "T2 \n (n=31)", "T3 \n (n=19)", "T4 \n (n=11)"))
+
 print(plot_box)
-                   
-                   
+
+
 pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_7_box_plot.pdf", width = 4, height =4)
 print(plot_box)
 dev.off()
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# With Sjodahl_GSE32894_data with 224 patient 
-table(info1$stage)
-info1$stage<-ifelse(info1$stage == "T4", "T3", info1$stage)
-# Create a factor with custom levels for T_stage
-info1$stage1 <- factor(info1$stage, levels = c("Ta","T1", "T2", "T3"))
 
-# Calculate the number of samples for each T_stage
-sample_counts <- info1 %>%
-  group_by(stage1) %>%
-  summarise(N = n())
-
-# T1  T2  T3  T4  Ta 
-# 63  43   7   1 110 
-# Create the reordered box plot
-plot_box1<- ggplot(info1, aes(stage1, CREBBP_mut, fill = factor(stage1))) +
-  geom_boxplot() +
-  labs(title = "GSE32894", x = "Tumor Stages", y = "Signature CREBBP_mut") +
-  coord_cartesian(ylim = c(min(info1$CREBBP_mut), max(info1$CREBBP_mut) + 8)) +
-  geom_hline(yintercept = mean(info1$CREBBP_mut), linetype = 2) +
-  stat_compare_means(method = "anova", label.y = max(info1$CREBBP_mut)) +
-  stat_compare_means(label = "p.signif", method = "wilcox.test", ref.group = ".all.",
-                     label.y = c(60, 80, 104,104)) +
-  theme_classic() +
-  theme(legend.position = "none", 
-        axis.text.x = element_text(color = "black"),
-        plot.title = element_text(hjust = 0.5, size = 10))+
-  scale_x_discrete(labels = c("Ta (n=110)","T1 (n=63)", "T2 (n=43)", "T3 (n=8)"))
-
-print(plot_box1)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_7_box_plot_GSE32894.pdf", width = 4, height =4)
-print(plot_box1)
-dev.off()
-
-3.8.Boxplot → CREBBP in different molecular subtypes
+[4.C]:Boxplot → CREBBP in different molecular subtypes
 library(ggpubr)
-xx = as.character(info1$molecular_subtype)
-se = grep("^MS1a", xx)
-xx[se] = "urothelial_A"
-se = grep("^MS1b", xx)
-xx[se] = "urothelial_A"
-
-se = grep("^MS2a.1", xx)
-xx[se] = "genomically unstable"
-se = grep("^MS2a.2", xx)
-xx[se] = "genomically unstable"
-
-se = grep("^MS2b2.1", xx)
-xx[se] = "urobasal B"
-
-se = grep("^MS2b2.2", xx)
-xx[se] = "SCC-like"
-
-se = grep("^MS2b.1", xx)
-xx[se] = "infiltrated"
-
-info1$Mol_subtypes = xx
-info1$Mol_subtypes <- as.character(info1$Mol_subtypes)
-# Sjodahl_GSE32894_data with 224 patient clinical and signature information 
 inp1="/home/u251079/BLCA_code/BLCA_ms_plots_data/GSE32894_for_BOX_Forest.csv"
 info1=read.csv(inp1, header = T, row.names = 1)
 colnames(info1)<-gsub("uni.noj__", "", colnames(info1))
 
-p3<-ggboxplot(data = info1,
-              x = "Mol_subtypes",
-              y = "CREBBP_mut",
-              color = "Mol_subtypes",
-              palette = "jco",
-              legend="none")+
-  ylim(min(info1$CREBBP_mut), max(info1$CREBBP_mut) + 25) +
-  geom_hline(yintercept = mean(info1$CREBBP_mut), linetype = 2) + # Add horizontal line at base mean
-  stat_compare_means(method = "anova", label.y = 120) +        # Add global ANOVA p-value
-  stat_compare_means(label = "p.signif", method = "wilcox.test",
-                     ref.group = ".all.",
-                     label.y = c(50,105, 90, 110, 50)) +  # Pairwise comparison against all
-  labs(title="GSE32894_data", x = "Molecular Subtype", y = "Signature_CREBBP_mut")+ 
-  theme(plot.title = element_text(hjust = 0.5), axis.title.x = element_text(vjust = 0.1, hjust = 0.5))
-print(p3)
-
-# Calculate mean scores for each molecular subtype
-mean_scores <- aggregate(CREBBP_mut ~ Mol_subtypes, data = info1, FUN = mean)
+###transform scores If X is the current score, please use the following transformation:   X' = X/sd(abs(X))
+# Assuming xx is your list of scores
+xx <- info1$CREBBP_mut
+abs.xx <- abs(xx)
+sd_abs_xx <- sd(abs.xx)
+transformed_score <- xx / sd_abs_xx
+max(transformed_score)
+# Print the transformed scores
+print(transformed_score)
+info1$CREBBP_mut_transformed<-transformed_score
 
 # Reorder the factor levels of Mol_subtypes based on mean scores
-info1$Mol_subtypes <- factor(info1$Mol_subtypes, levels = mean_scores[order(mean_scores$CREBBP_mut), "Mol_subtypes"])
+mean_scores <- aggregate(CREBBP_mut_transformed ~ Mol_subtypes, data = info1, FUN = mean)
+info1$Mol_subtypes <- factor(info1$Mol_subtypes, levels = mean_scores[order(mean_scores$CREBBP_mut_transformed), "Mol_subtypes"])
 
 p3 <- ggboxplot(data = info1,
                 x = "Mol_subtypes",
-                y = "CREBBP_mut",
+                y = "CREBBP_mut_transformed",
                 color = "black",  # Set border color to black
                 fill = "Mol_subtypes",   # Fill color based on molecular subtypes
                 palette = "jco",
                 legend = "none") +
-  ylim(min(info1$CREBBP_mut), max(info1$CREBBP_mut) + 5) +
-  geom_hline(yintercept = mean(info1$CREBBP_mut), linetype = 2, color = "black") + # Horizontal line for overall mean in black
+  ylim(min(info1$CREBBP_mut_transformed), max(info1$CREBBP_mut_transformed) + 1) +
+  geom_hline(yintercept = mean(info1$CREBBP_mut_transformed), linetype = 2, color = "black") + # Horizontal line for overall mean in black
   stat_summary(fun = "mean", geom = "line", color = "black", size = 1) +  # Add line indicating mean for each group
-  stat_compare_means(method = "anova", label.y = 80) +
-  stat_compare_means(label = "p.signif", method = "wilcox.test", ref.group = ".all.", label.y = c(50, 50, 83, 105, 105)) +
-  labs(title = "Wilcox.test between sig_score vs mol_subtyp", x = "Molecular Subtype", y = "Signature_CREBBP_mut") + 
-  theme(plot.title = element_text(hjust = 0.5))
+  stat_compare_means(method = "anova", label.y = 5) +
+  stat_compare_means(label = "p.signif", method = "wilcox.test", ref.group = ".all.", label.y = c(3, 3, 4.2, 5.5, 5.5)) +
+  labs(title = "GSE32894-Molecular Subtypes",x=NULL, y = "CREBBP_mut Sig.score") + 
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(hjust=1,vjust = 0.5, angle = 90))
 
 print(p3)
 
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_8_Mol_sub_plot.pdf", width = 7, height =4)
+pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_8_Mol_sub_plot.pdf", width = 4, height =5)
 print(p3)
 dev.off()
 
-3.9.Forest plot ⇒ results from stratified analysis (MI vs. non-MS)
-# Fit a Cox proportional hazards model using forest plot
-# Sjodahl_GSE32894_data with 224 patient clinical and signature information 
-inp1="/home/u251079/BLCA_code/BLCA_ms_plots_data/GSE32894_for_BOX_Forest.csv"
-info1=read.csv(inp1, header = T, row.names = 1)
-colnames(info1)<-gsub("uni.noj__", "", colnames(info1))
-
-colnames(info1)
-fit.coxph1 <- coxph(Surv(t.dfs, e.dfs) ~CREBBP_mut+gender+ Mol_subtypes, info1)
-n<-ggforest(fit.coxph1, info1, main="Molecular Subtypes-GSE32894",cpositions = c(0, 0.15,0.35),
-            fontsize = 1)
-print(n)
-
-#@@@@@@@@@@@ ADD REF
-# Ensure Mol_subtypes is a factor and set "Urothelial-A" as the reference
-info1$Mol_subtypes1 <- factor(info1$Mol_subtypes, levels = c("urothelial_A", levels(info1$Mol_subtypes)[!levels(info1$Mol_subtypes) == "urothelial_A"]))
-
-# Fit the Cox model
-fit.coxph1 <- coxph(Surv(t.dfs, e.dfs) ~ CREBBP_mut+gender+Mol_subtypes1, data = info1)
-
-# Generate the forest plot
-n <- ggforest(fit.coxph1, data = info1, main = "Molecular Subtypes-GSE32894", 
-              cpositions = c(0, 0.15, 0.35), fontsize = 1)
-print(n)
-
-# # Ensure Mol_subtypes is a factor and set "Urothelial-A" as the reference
-#info1$Mol_subtypes <- factor(info1$Mol_subtypes, levels = c("urothelial_A", levels(info1$Mol_subtypes)[!levels(info1$Mol_subtypes) == "urothelial_A"]))
-# # Ensure Mol_subtypes is a factor
-# #@@@@@@@@@@@ REMOVE REF
-# info1$Mol_subtypes <- factor(info1$Mol_subtypes)
-# # Remove "urothelial_A" from the levels
-# info1$Mol_subtypes <- factor(info1$Mol_subtypes, levels = levels(info1$Mol_subtypes)[levels(info1$Mol_subtypes) != "urothelial_A"])
-# 
-
-# 
-# # Fit the Cox model
-# fit.coxph1 <- coxph(Surv(t.dfs, e.dfs) ~ CREBBP_mut+age+Mol_subtypes, data = info1)
-# 
-# # Generate the forest plot
-# n <- ggforest(fit.coxph1, data = info1, main = "Molecular Subtypes-GSE32894", 
-#               cpositions = c(0, 0.15, 0.35), fontsize = 1)
-# print(n)
 
 
-?ggforest
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_9_Forestplot.pdf", width = 10, height =8)
-print(n)
-dev.off() 
 
 
-# library(patchwork)
-# all_plots<-p1+plot_violin+plot_box+p3+n+plot_layout(ncol = 3, nrow = 2,guides = "collect")+plot_annotation(tag_levels = "A")
-# print(all_plots)
-# 
-# pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_3/3_5to3_9_allplots.pdf", width = 15, height =10, units = "in", res = 1200)
-# print(all_plots)
-# dev.off() 
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-#-----------
-Section-4:
-#------------------------
-[4.1] Correlation Heatmap signature scores verses Thorsson scores  
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Figure-5
+[5.A] Correlation Heatmap signature scores verses Thorsson scores  
 rm(list = ls())
 myinf1 <- "/mount/ictr1/chenglab/cc59/PubDat/Dataset/Firehose/done/Thorsson_2018_TCGA_immunelandscape.csv"
 myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA__epiGene_iRAS.txt"
-
 #------------------------
 # Epi gene signatures with -log10(p-value) in all patients of BLCA up and down according to the BETA coefficients up (beta>0) down (beta<0)
 data <- read.table(myinf2, header=T, sep="\t", row.names=1, quote="", check.names=F)
@@ -1228,10 +1051,7 @@ p<-pheatmap(
   breaks = seq(-1, 1, length.out = 101)
 )
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/Corr_imm_subtypes.pdf", width = 6, height = 5)
-print(p)
-dev.off()
-
+#Save the figure
 library(pheatmap)
 
 # Assuming 'dat' is your data matrix
@@ -1258,7 +1078,7 @@ dev.off()
 
 #@@@@@@@@@@@@@@@@@@@@
   
-[4.a]. Volcano plot (G): Association with Prolifiration
+Figure: 5B Volcano plot (G): Association with Prolifiration
 rm(list = ls())
 library(ggplot2)
 library(ggrepel)
@@ -1272,17 +1092,6 @@ dat1$gene<-rownames(dat1)
 #dat1 <- dat1[!rownames(dat1) %in% c("TP53_del", "TP53_delmut"),]
 dat1$meandiff<-c(dat1$avg.MU-dat1$avg.WT)
 dat1$sig_gene<-ifelse(dat1$negLogP > 1.30103, rownames(dat1), NA)
-
-a <- ggplot(dat1, aes(log2FC, negLogP)) +
-  geom_hline(yintercept = 1.30103, color="blue", linetype="dashed")+
-  geom_point(size = 1.5, aes(color=sig_gene)) + # Label points with 'gene'
-  theme_get()+
-  theme(legend.position ="none", plot.title = element_text(hjust = 0.5, size = 8)) +
-  labs(title = "Cell proliferation score", x = "Log2FC", y ="-log10(p-value)")+
-  geom_label_repel(aes(label=rownames(dat1)), size=2)
-
-# Print the plot
-print(a)
 
 a <- ggplot(dat1, aes(meandiff, negLogP, label=gene)) +
   geom_hline(yintercept = 1.30103, color="blue", linetype="dashed")+
@@ -1298,14 +1107,10 @@ a <- ggplot(dat1, aes(meandiff, negLogP, label=gene)) +
 # Print the plot
 print(a)
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/Volcano_Proliferationimm.pdf", width = 4, height = 3.5)
-print(a)
-dev.off()
-
-
 
 
 #----------
+Figure 5B: Volcano plot (G): Association with Leukocyte score
 rm(list = ls())
 library(ggplot2)
 library(ggrepel)
@@ -1334,7 +1139,7 @@ a <- ggplot(dat1, aes(meandiff, negLogP, label = rownames(dat1))) +
 # Print the plot
 print(a)
 
-[4.2]. Volcano plot (G): Association with lymphocyte level
+Figure 5B: Volcano plot (G): Association with lymphocyte level
 inf2= "/home/u251079/BLCA_code/BLCA_ms_plots_data/4_2_Lymph_inf_Sig_score.txt"
 dat2= read.table(inf2, sep = "\t", header = T, row.names = 1, quote = "")
 names(dat2)
@@ -1358,138 +1163,11 @@ b <- ggplot(dat2, aes(meandiff, negLogP, label=rownames(dat2))) +
 
 # Print the plot
 print(b)
-
-c<-ggarrange(a, b, ncol=2, nrow=1)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/4_1and2_volcano_plots_1013.pdf", width = 6, height = 3.5)
-print(c)
-dev.off()
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.3]. Heatmap (G) → aberration x Imm 
-# Mut vs Wild type
-inp= "/home/u251079/BLCA_code/BLCA_ms_plots_data/4_3_abber_imm.csv"
-data=read.csv(inp, header = T)
-unique(data$name)
-
-se= -log10(0.01)
-rownames(data)
-# Removed cells data
-se1 <- grep("\\Cells", data$name)
-data=data[-se1,]
-# New jan 31 2024
-se2<-c("Proliferation","Leukocyte.Fraction","Stromal.Fraction","Macrophage.Regulation","Lymphocyte.Infiltration.Signature.Score","TGF.beta.Response", "TCR.Richness", "BCR.Richness" )
-data=data[data$name %in% se2,]
-unique(data$name)
-se1<- unique(data$name)[26:35]
-data=data[!(data$name%in% se1),]
-
-p <- ggplot(data, aes(x = reorder(info_colname, -negLogP), y = reorder(name, +negLogP))) +
-  geom_tile(aes(fill = negLogP)) +
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = se) +
-  theme_classic() + xlab("")+ylab("")+
-  labs(fill ="-log10(P-value)")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, color = "black"),
-        axis.text.y = element_text(color = "black"),
-        legend.title = element_text(size=8, vjust = 0.1))
-
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/Abbr_imm.pdf", width = 6, height = 3.5)
-print(p)
-dev.off()
-
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.4]. Boxplot (example)
-rm(list = ls())
-library(reshape2)
-library(ggpubr)
-myinf1 = "/home/u251079/BLCA_code/BLCA_ms_plots_data/4_3_Box.csv"
-
-data_box<-read.csv(myinf1, row.names = 1, header = T)
-names(data_box)
-box_leuco<-data_box[,-2]
-# remove non significant abbr from plots
-se=c("TP53_mut","TP53_del" ,"TP53_delmut","ARID1A_mut", "CHD6_mut", "CHD7_mut", 
-     "CREBBP_mut", "EP300_mut", "PIK3CA_mut", "RB1_mut" , "CREBBP_delmut", 
-     "EP300CREBBP_mut", "EP300CREBBP_delmut","CHD6_ampmut","CHD7_ampmut")
-box_leuco=box_leuco[,!(colnames(box_leuco) %in% se)]
-
-box_leuco1<-melt(box_leuco, id.vars=c("Leukocyte.Fraction"))
-box_leuco1<-box_leuco1[,c(3,2,1)]
-names(box_leuco1)[1]<-"Mutation Status"
-levels(box_leuco1$variable)
-
-Leuco_box1<-ggplot(box_leuco1, aes(variable, Leukocyte.Fraction, fill=`Mutation Status`))+
-  geom_boxplot(outlier.shape = NA,width=0.5, position=position_dodge(width = 0.7))+
-  labs(title = NULL, x = NULL, y = "Leukocyte fraction") +
-  coord_cartesian(ylim = c(min(box_leuco1$Leukocyte.Fraction),max(box_leuco1$Leukocyte.Fraction)+0.20))+
-  stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     label.y = 0.85) +
-  theme_classic()+
-  theme(axis.text.x = element_text(hjust = 1, vjust = 0.5, color = "black"),
-        axis.title.x = element_text(size = 10),
-        axis.text.y = element_text(size = 8, color = "black"),
-        plot.title = element_text(hjust = 0.5, size = 12),
-        legend.position = "right",
-        legend.title = element_blank(),
-        legend.direction = "vertical",
-        legend.text = element_text(angle = 0),
-        legend.background = element_rect(size=0.3, 
-                                         linetype="solid",
-                                         colour ="black"))+
-  scale_fill_discrete(labels=c('aberr', 'wild'),
-                      guide = guide_legend(label.position = "top"))+
-  coord_flip()
-
-print(Leuco_box1)
-
-
-#@@@@@@@@@@@@@ Lympho
-box_lymp<-data_box[,-1]
-se=c("TP53_mut","TP53_del" ,"TP53_delmut","CHD6_ampmut","CHD7_ampmut", "CREBBP_delmut", "EP300CREBBP_mut","EP300CREBBP_delmut")
-box_lymp=box_lymp[,!colnames(box_lymp) %in% se]
-se= c("ARID1A_mut", "CHD6_mut", "CHD7_mut", "CREBBP_mut","EP300_mut","PIK3CA_mut","CHD6_ampmut","CHD7_ampmut","CREBBP_delmut","EP300CREBBP_mut", "EP300CREBBP_delmut")
-box_lymp<-box_lymp[, !(colnames(box_lymp) %in% se)]
-
-box_lymp1<-melt(box_lymp, id.vars=c("Lymphocyte.Infiltration.Signature.Score"))
-box_lymp1<-box_lymp1[,c(3,2,1)]
-names(box_lymp1)[1]<-"Mutation Status"
-names(box_lymp1)
-levels(box_lymp1$variable)
-
-lymp_box1<-ggplot(box_lymp1, aes(variable,Lymphocyte.Infiltration.Signature.Score,fill=`Mutation Status`))+
-  geom_boxplot(outlier.shape = NA,width=0.5, position=position_dodge(width = 0.7))+
-  labs(title = NULL, x = NULL, y = "Lymphocyte infiltration") +
-  coord_cartesian(xlim = c(min(box_lymp1$Lymphocyte.Infiltration.Signature.Score),max(box_lymp1$Lymphocyte.Infiltration.Signature.Score)+2))+
-  stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     label.y = 3.80) +
-  theme_classic()+
-  theme(axis.text.x = element_text(hjust = 1, vjust = 0.5, color = "black"),
-        axis.title.x = element_text(size = 10),
-        axis.text.y = element_text(color = "black"),
-        plot.title = element_text(hjust = 0.5, size = 12),
-        legend.position = "none")+
-  coord_flip()
-
-print(lymp_box1)
-
-library(patchwork)
-p<-Leuco_box1+lymp_box1
-
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/4_4_Boxplots.pdf", width = 8, height = 5)
-print(p)
-dev.off()
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.5]. Correlation matrix → signature x Imm
-rm(list = ls())
+Figure 5C Heatmap → aberration score with Immune cells 
 # Using TIMER data set
 mydat= "/home/u251079/BLCA_code/BLCA_ms_plots_data/Corr_Timer_TCGA_TIL_score.csv"
 dat<-read.csv(mydat, row.names = 1, header = T)
@@ -1518,13 +1196,8 @@ p1 <- pheatmap(dat,
 print(p1)
 
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/Cor_TCGA_BLCA_TIMER_cells.pdf", width = 6, height = 6)
-print(p1)
-dev.off()
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.6]. ??? → with immune pathways
+Figure SF4: correlation signature scores with immune pathways
 rm(list = ls())
 inf="/home/u251079/BLCA_code/BLCA_ms_plots_data/4_3_immpath.csv"
 corr_Imm_pathways=read.csv(inf, row.names = 1, header = T)
@@ -1580,24 +1253,19 @@ heatmap_plot1 <- ggplot(corr_data2, aes(variable, path, fill = value)) +
 # Print the heatmap with the legend scale and vertical legend labels
 print(heatmap_plot1)
 
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/4_6_Imm_pathways_2.pdf", width = 12, height = 4.5)
-print(heatmap_plot1)
-dev.off()
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.7].with immune genes
+Figure SF5: correlation of signature scores with immune genes
 rm(list = ls())
-inf="/home/u251079/BLCA_code/BLCA_ms_plots_data/4_3_immgene.csv"
-corr_Imm_gene= read.csv(inf, row.names = 1, header = T)
-names(corr_Imm_gene)
-se=c("CHD6_ampmut","CHD7_ampmut","CREBBP_delmut","EP300CREBBP_mut","EP300CREBBP_delmut")
-corr_Imm_gene= corr_Imm_gene[, !(colnames(corr_Imm_gene)%in% se)]
-
 library(ggplot2)
 library(ggpubr)
 library(ggrepel)
 library(reshape2)
 library(dplyr)
+inf="/home/u251079/BLCA_code/BLCA_ms_plots_data/4_3_immgene.csv"
+corr_Imm_gene= read.csv(inf, row.names = 1, header = T)
+names(corr_Imm_gene)
+se=c("CHD6_ampmut","CHD7_ampmut","CREBBP_delmut","EP300CREBBP_mut","EP300CREBBP_delmut")
+corr_Imm_gene= corr_Imm_gene[, !(colnames(corr_Imm_gene)%in% se)]
 
 corr_Imm_gene1<-corr_Imm_gene
 corr_Imm_gene1$Imm_gene<-rownames(corr_Imm_gene1)
@@ -1622,8 +1290,6 @@ corr_data1 <- melt(corr_Imm_gene, id.vars = "Imm_gene")
 names(corr_data)
 unique(corr_data_filtered$Imm_gene)
 
-# 171 immune genes highley correlated 
-
 # Create the heatmap plot with the filtered data and customized fill scale
 heatmap_plot1 <- ggplot(corr_data1, aes(variable, Imm_gene, fill = value)) +
   geom_tile() +
@@ -1644,61 +1310,7 @@ heatmap_plot1 <- ggplot(corr_data1, aes(variable, Imm_gene, fill = value)) +
 # Print the heatmap with the updated color scale
 print(heatmap_plot1)
 
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/4_7_Imm_genes.pdf", width = 7, height = 25)
-print(heatmap_plot1)
-dev.off()
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.8]. Volcano plot (G) → with immunotherapy response (Res vs Non-Res)
-# https://sdgamboa.github.io/post/2020_volcano/
-rm(list = ls())
-in1<-"/home/u251079/BLCA_code/BLCA_ms_plots_data/Immune_res vs Non_res.csv"
-inp<-read.csv(in1, row.names = 1, header = T)
-
-inp$Glo_mean_diff<-inp$avg.MU-inp$avg.WT
-
-# inp$Glo_abs_mean_log2FC<-log2(abs(inp$avg.MU))-log2(abs(inp$avg.WT))
-inp$neg_log10p<- c(-log10(inp$P.t))
-p_value<- -log10(0.05)
-inp$sig<-ifelse(inp$Glo_mean_diff > 0 & inp$Glo_mean_diff < 0 | inp$neg_log10p >=p_value, rownames(inp), NA)
-inp$val<-ifelse(inp$sig %in% rownames(inp), 1, 0)
-  
-names(inp)
-rownames(inp)
-se=c("TP53_mut","TP53_del" ,"TP53_delmut","CHD6_ampmut","CHD7_ampmut", "CREBBP_delmut", "EP300CREBBP_mut","EP300CREBBP_delmut")
-inp <- inp[!rownames(inp) %in% se,]
-  
-library(ggrepel)
-
-p1 <- ggplot(inp, aes(Glo_mean_diff, neg_log10p, label=sig)) + # -log10 conversion  
-  geom_hline(yintercept = p_value, color="blue", linetype="dashed")+
-  geom_vline(xintercept = 0, color="#E00A10", linetype="dashed")+
-  geom_point(size = 1.5, aes(color=as.factor(val))) +
-  theme_classic()+
-  coord_cartesian(xlim = c(-12,14))+
-  scale_color_manual(values = c("0" = "black", "1" = "red"))+
-  labs(title = "ER genes with Immunotherapy response", 
-       x = "Mean diffrence between Responders and Non-Responders", 
-       y=expression("-log"[10]*"(p-value)"))+
-  theme(legend.position ="none", 
-        plot.title = element_text(hjust = 0.5, size = 10),
-        axis.title.x = element_text(size = 8, color = "black")) +
-  geom_text_repel(aes(label=sig), size=2)
-
-
-
-print(p1)
-
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/4_8_volcano_plot.pdf", width = 4, height =3)
-print(p1)
-dev.off() 
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[4.9]. Boxplot (E) → examples
-rm(list=ls())
+Figure 5D: Prediction of signature scores with patients with Immunotherapy responces
 library(ggpubr)
 library(reshape2)
 data="/home/u251079/BLCA_code/BLCA_ms_plots_data/Box_Immune_res vs Non_res.csv"
@@ -1718,24 +1330,6 @@ data1=data1[, !(colnames(data1) %in% se)]
 rownames(data1)<-NULL
 data2<-melt(data1)
 unique(data2$variable)
-
-names(data2)
-# add p-value
-# https://www.datanovia.com/en/blog/how-to-add-p-values-onto-a-grouped-ggplot-using-the-ggpubr-r-package/
-p <- ggplot(data2, aes(variable, value, fill = response)) +
-  geom_boxplot(outlier.shape = NA, colour = "black") +
-  # scale_fill_manual(values = c("#DE676A", "#DDF68F")) +
-  coord_cartesian(ylim = c(min(data2$value), max(data2$value) + 1)) +
-  labs(title = "ER genes with Immunotherapy response", x = NULL, y = "ER_gene signature scores") +
-  stat_compare_means(method = "wilcox.test", label = "p", 
-                     label.y = max(data2$value) + 0.1) +
-  theme_classic()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, color="black"),
-        plot.title = element_text(hjust = 0.5, size = 10))+
-  theme(legend.position = c(0.22,0.07),
-        legend.direction = "horizontal")
-  
-# flip the plot
 p <- ggplot(data2, aes(variable, value, fill = response)) +
   geom_boxplot(outlier.shape = NA, colour = "black", position = position_dodge(width = 0.9)) +
   coord_cartesian(xlim = c(min(data2$value), max(data2$value) + 1)) +
@@ -1753,18 +1347,96 @@ p <- ggplot(data2, aes(variable, value, fill = response)) +
 print(p)
 
 
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_4/Immune_responder_ER_genes_Boxplots.pdf", width = 3.2, height =4)
-print(p)
-dev.off() 
-
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-#-----------
-Section-5:Mutations of some ER genes are associated with a global DNA-methylation change
-#----------
-[5.1] Volcano plot (G) → changes in median methylation levels
+Section-6:Mutations of some ER genes are associated with a global DNA-methylation change
+
+rm(list=ls())
+Figure 6A: Correlation analysis using signature score to DNA methylation
+myinf1 = "/mount/ictr1/chenglab/cc59/PubDat/Dataset/Firehose/Methylation/processed/BLCA_Methy450K.rda"
+myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA_Freq_SomaticMutation_epiGenes.txt"
+myinf3 = "/mount/ictr1/chenglab/cc59/PubDat/organisms/human/annotation/GPL16304_illumina_HumanMethy450K_annotation.txt"
+
+
+cpg = read.table(myinf3, sep="\t", header=T, quote="")
+xx = as.character(cpg$HIL_CpG_class)
+names(xx) = cpg$ID
+cpg1 = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+se = which(info$KDM6A_mut>0)
+sam.mu = row.names(info)[se]
+se = which(info$KDM6A_mut==0)
+sam.wt = row.names(info)[se]
+
+load(myinf1)
+data = mydata
+xx = colnames(data)
+medians <- apply(data,2, median, na.rm=TRUE)
+print(medians)
+names(medians)
+se = which(substr(names(medians), 14, 15)=="01")
+medians<-medians[se]
+names(medians)= substr(names(medians), 1, 12)
+myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA__epiGene_iRAS.txt"
+info <- read.table(myinf2, header=T, sep="\t", row.names=1, quote="", check.names=F)
+data<-info
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+score =xx
+colnames(score)<-gsub("uni.noj__", "", colnames(score))
+score=score[,1:13]
+xx=intersect(rownames(score), names(medians))
+score=score[xx,]
+medians=medians[xx]
+medians <- as.matrix(medians)
+score <- as.matrix(score)
+corr_meth<-cor(medians, score, method = "spearman")
+plot(corr_meth)
+corr_meth<-as.data.frame(corr_meth)
+rownames(corr_meth)[1]<-"DNA Methylarion"
+heatmap(corr_meth)
+
+# Assuming 'corr' is your vector of correlation coefficients
+corr <- c(ARID1A_mut = -0.11493086, CHD6_mut = -0.16913085, CHD7_mut = 0.08453035, 
+          CREBBP_mut = 0.32817909, EP300_mut = 0.38738692, KDM6A_mut = -0.59146212, 
+          CHD6_amp = -0.55269039, CHD7_amp = -0.54972258, PRDM9_amp = -0.07020391, 
+          CHD3_del = -0.56200671, CREBBP_del = -0.45171140, HDAC4_del = -0.50857248, 
+          PHF23_del = -0.55950554)
+
+# Convert to a data frame for plotting
+corr_df <- data.frame(Gene = names(corr), Correlation = corr)
+
+# Order the data frame by correlation for a more intuitive visualization
+corr_df <- corr_df[order(corr_df$Correlation), ]
+
+# Plotting
+library(ggplot2)
+p<-ggplot(corr_df, aes(x = reorder(Gene, Correlation), y = Correlation, fill = Correlation)) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  coord_flip() + # Flips the axes for better readability of gene names
+  labs(title = "Correlation between epiRG-aber signature score and \n global DNA Methylation", 
+       x = "Gene Aberration", y = "Spearman Correlation Coefficient") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, 
+                       limit = c(-1, 1), space = "Lab", name="Correlation") +
+  theme(legend.position = "right",
+        axis.text.x = element_text(color = "black"),
+        axis.text.y = element_text(color = "black"))
+
+# Note: Adjust 'scale_fill_gradient2' parameters as needed to fit your color preference.
+print(p)
+
+
+
+Figure 6B: Volcano plot (G) → changes in median methylation levels
 # t-test log10_p value vs median methylation levels.
 rm(list = ls())
 library(ggrepel)
@@ -1802,8 +1474,52 @@ print(Met_cp)
 dev.off() 
 
 
+Figure 6C: KDM6a-mut methylation Up and Down CpGs
+inf<-"/home/u251079/BLCA_code/BLCA_ms_plots_data/Volcano_KDM6A_met_up_down.csv"
+kdm6a<-read.csv(inf, row.names = 1, header = T)
+kdm6a<-na.omit(kdm6a)
+library(ggplot2)
+names(kdm6a)
+kdm6a$log10p<-c(-log10(kdm6a$KDM6A_mut_Q_val_BH))
+kdm6a <- kdm6a %>% 
+  mutate(Expression = case_when(KDM6A_mut_mut_wt >= 0 & KDM6A_mut_Q_val_BH <= 0.01 ~ "Up-regulated",
+                                KDM6A_mut_mut_wt <= -0 & KDM6A_mut_Q_val_BH <= 0.01 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+legend_counts <- kdm6a %>%
+  group_by(Expression) %>%
+  summarise(Count = n())
+View(legend_counts)
+
+p1 <- ggplot(kdm6a, aes(x=KDM6A_mut_mut_wt, y=log10p))+
+  geom_point(aes(color = Expression), size = 2/5) +
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
+  geom_hline(yintercept =2, color = "#DC3A17", linetype = "dashed") +
+  labs(title = "Diffrentially methylated CpGs of patients with KDM6A mutation to wild type",
+       x="Difference between means (mut-wild)") +
+  ylab(expression("-log"[10]*"(padj-BH)")) +
+  theme_classic()+
+  #  coord_cartesian( ylim = c(min(data$log10padj),max(data$log10padj)+5))+
+  #xlim=c(-10.5,10.5),
+  scale_color_manual(
+    values = c("firebrick3", "gray50", "dodgerblue3"),
+    labels = c(
+      paste("Up-regulated (", legend_counts[legend_counts$Expression == "Up-regulated", "Count"], ")"),
+      paste("NA"),
+      paste("Down-regulated (", legend_counts[legend_counts$Expression == "Down-regulated", "Count"], ")")
+    )
+  ) +
+  guides(colour = guide_legend(override.aes = list(size = 1.5))) +
+  theme(plot.title = element_text(hjust = 0.5, size = 10),
+        legend.position = "top",
+        legend.title = element_text(size = 6),
+        legend.text = element_text(size = 6))
+
+print(p1)
+
+
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[5.2] Boxplot (E) → KDM6A_mut  
+Figure 6D: Average methylation levels in patients who have mutations in the KDM6A gene (KDM6A-mut)
 rm(list = ls())
 myinf1 = "/home/u251079/BLCA_code/BLCA_ms_plots_data/KDM6A_mut_CpG_mean_box.csv"
 my_dat<-read.csv(myinf1, row.names = 1, header = T)
@@ -1826,7 +1542,7 @@ print(p)
 dev.off() 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[5.3] Boxplot (E) → KDM6A_mut  (CpG-4 categories)
+Figure 6E: KDM6A_mut  (CpG-4 categories)
 #---------------------------------------------
 inf="/home/u251079/BLCA_code/BLCA_ms_plots_data/5_3_mean_CpGs_types.csv"
 data=read.csv(inf, row.names = 1, header = T)
@@ -1850,179 +1566,6 @@ plot_CpGs<-ggplot(molted, aes(variable, value, color=KDM6A_mut))+
         axis.text.y = element_text(color = "black"))
 
 print(plot_CpGs)
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/5_3_met_CpG.pdf", width = 4, height =4)
-print(plot_CpGs)
-dev.off() 
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-[5.4] Venn diagram (E) → KDM6A_mut (differential methylation CpG sites) (Total CpGs, Up CpG’s, Down CpG’s with KDM6A patient with Mut vs Wild): Ref: Fig 2A-PMC5839302
-rm(list = ls())
-mylist1="/home/u251079/BLCA_code/BLCA_ms_plots_data/Venn_diagram_KDM6A_met.csv"
-mydat1<-read.csv(mylist1, row.names = 1, header = T)
-
-library("ggVennDiagram")
-class(mydat1)
-mydat2<- as.list.data.frame(mydat1)
-# CpG_lists<-mydat2[1:3]
-which(mydat2$All_CpGs != mydat2$up)
-names(mydat2)[3]<-"All_CpGs"
-p<-ggVennDiagram(mydat2[1:3],
-                 set_size = 4,
-                 label= "count",edge_lty = "dashed",
-                 edge_size = 1,label_color = "black",
-                 label_alpha = 0)+
-  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")+
-  theme(legend.position = "NONE", plot.title = element_text(size =10, hjust = 0.5))
-
-p1<-p + scale_x_continuous(expand = expansion(mult = .2))+ labs(title ="differential methylation CpGs sites of patients \n with KDM6A_mut vs wild")
-print(p1)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/5_4_Venn_KMD6A.pdf", width = 5, height =5, units = "in", res = 900)
-print(p1)
-dev.off() 
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[5.5] Same as above → (CpG categories)
-#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-mydat1<-read.csv(mylist1, row.names = 1, header = T)
-se<-complete.cases(mydat1$up)
-my_cpg<-mydat1[se,]
-se2<-complete.cases(mydat1$down)
-my_cpg2<-mydat1[se2,]
-my_cat_cpg<-rbind(my_cpg, my_cpg2)
-my_cat_cpg$HC<-ifelse(my_cat_cpg$HIL_CpG_class == "HC", my_cat_cpg$ID, NA)
-my_cat_cpg$ IC<-ifelse(my_cat_cpg$HIL_CpG_class == " IC", my_cat_cpg$ID, NA)
-my_cat_cpg$ICshore<-ifelse(my_cat_cpg$HIL_CpG_class == "ICshore", my_cat_cpg$ID, NA)
-my_cat_cpg$LC<-ifelse(my_cat_cpg$HIL_CpG_class == "LC", my_cat_cpg$ID, NA)
-
-my_cat_cpg1<-my_cat_cpg[, c(1:2,5:8)]
-my_dat2<- as.list.data.frame(my_cat_cpg1)
-class(my_dat2)
-
-my_cat_cpg1 <- lapply(my_cat_cpg1, as.character)
-names(my_cat_cpg1)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/5_5_Venn_KMD6A.pdf", width = 5, height =5, units = "in", res = 900)
-
-
-
-venn<-ggVennDiagram(my_cat_cpg1, label= "count", 
-                    edge_lty = "dashed",
-                    edge_size = 1,label_color = "black",
-                    label_alpha = 0)+
-  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")+
-  theme(legend.position = "NONE", plot.title = element_text(size =10, hjust = 0.5))
-
-venn + scale_x_continuous(expand = expansion(mult = .2))+ labs(title ="Up_Down CpGs with categories of patients \n KDM6A_mut vs wild")
-
-dev.off() 
-
-
-#--------------------------------------------------------
-[5.6] ?? → drug sensitivity a KMD6A mutation in CCLE/GDSC?
-  #--------------------------------------------------------
-rm(list = ls())
-# Data
-# /mount/ictr1/chenglab/cc59/PubDat/Dataset/CCLE
-# CCLE_hybrid_capture1650_hg19_NoCommonSNPs_NoNeutralVariants_CDS_2012.05.07.maf
-# CCLE_Cell_Lines.txt
-# CCLE_sample_info_file_2012-10-18.txt
-# Cell_lines_annotations_20181226.txt
-# isolate bladder
-# CCLE_Drugs.txt
-# CCLE_Expression_2012-09-29.res
-
-# Drug sensitivity can be found at 
-# /mount/ictr1/chenglab/cc59/PubDat/Dataset/CCLE/
-in1= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/CCLE/CCLE_Cell_Lines.txt"
-x= read.table(in1, sep = "\t", quote = "", stringsAsFactors = F)
-in2= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/CCLE/CCLE_Drugs.txt"
-x1= read.table(in2, sep = "\t", quote = "", stringsAsFactors = F)
-in3= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/CCLE/CCLE_NP24.2009_Drug_data_2012.02.20.csv"
-x2= read.csv(in3, header = T)
-
-# More drug IC50 
-# /mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS
-done                                    gdsc_cell_lines_w2.csv
-expU133A.txt                            gdsc_compounds_conc_w2.csv
-GDSC1_fitted_dose_response_25Feb20.txt  GDSC_Drugs.txt
-# permission denied GDSC2_2022Dec/mutations_summary_20221018.csv                          gdsc_en_input_w2_blood.txt
-GDSC2_fitted_dose_response_25Feb20.txt  gdsc_en_input_w2.csv
-GDSC_BreastCancerCellLine_profile.txt   gdsc_manova_input_w2.csv
-GDSC_Cell_Lines.txt 
-
-inp="/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/gdsc_en_input_w2.csv"
-# inp1="/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/gdsc_cell_lines_w2.csv"
-# inp2="/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/gdsc_compounds_conc_w2.csv"
-# inp3="/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/gdsc_manova_input_w2.csv"
-
-
-xx=read.csv(inp, row.names = 1, header = T)
-xx_blader=xx[rownames(xx)=="bladder",]
-se = which(xx_blader[1,]%in% 1)
-xx1=xx[,se]
-
-xx_blader1= xx[rownames(xx) == "KMD6A MUT",]
-
-
-# xx1=read.csv(inp1, header = T) # COSMIC ID and the cell line name
-# xx2=read.csv(inp2, row.names = 1, header = T) # min and max concentration micro molar of drugs
-# xx3=read.csv(inp3, row.names = 1, header = T)
-
-inp4= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/expU133A.txt"
-inp5= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/GDSC1_fitted_dose_response_25Feb20.txt"
-inp6= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/GDSC_Drugs.txt"
-inp7= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/GDSC2_fitted_dose_response_25Feb20.txt" 
-inp8= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/GDSC_BreastCancerCellLine_profile.txt"
-inp9= "/mount/ictr1/chenglab/cc59/PubDat/Dataset/GDS/GDSC_Cell_Lines.txt"
-
-xx4= read.table(inp4, sep = "\t", row.names = 1, header = T, quote = "", stringsAsFactors = F)
-xx5= read.table(inp5, sep = "\t", header = T, quote = "", stringsAsFactors = F)
-xx6= read.table(inp6, sep = "\t",  quote = "", stringsAsFactors = F)
-xx7= read.table(inp7, sep = "\t",  header = T, quote = "", stringsAsFactors = F)
-xx8= read.table(inp8, sep = "\t", row.names = 1, header = T, quote = "", stringsAsFactors = F)
-xx9= read.table(inp9, sep = "\t",  quote = "", stringsAsFactors = F)
-
-
-rm(x2)
-
-
-# Added on January 16 2024
-[6] association with MS (Mutational Signatures)
-## SBS1	SBS2	SBS5	SBS13
-Finally CREBBP-mut status of TCGA bladder patients revealed as highly association with MS (mutational signatures) from COSMIC.
-## SBS13
-https://cancer.sanger.ac.uk/signatures/sbs/sbs13/
-  n1  n2  avg1  avg2 tscore         pt         pw
-CREBBP_del          30 279 0.217 0.282 -2.271 0.02945401 0.02912755
-CREBBP_delmut       61 248 0.233 0.286 -2.626 0.01013228 0.01048390
-
-## SBS1 --> an endogenous mutational process initiated by spontaneous or enzymatic deamination of 5-methylcytosine to thymine which generates G
-https://cancer.sanger.ac.uk/signatures/sbs/sbs1/
-  n1  n2  avg1  avg2 tscore          pt          pw
-CHD6_mut            28 281 0.044 0.072 -3.321 0.001950262 0.003584518
-CHD7_mut            27 282 0.047 0.071 -2.317 0.026961134 0.004053723
-EP300_mut           50 259 0.051 0.073 -2.700 0.008500867 0.002242213
-KDM6A_mut           82 227 0.060 0.073 -1.851 0.065925508 0.060712493
-EP300CREBBP_mut     80 229 0.059 0.073 -2.094 0.037853674 0.029267455
-EP300CREBBP_delmut 100 209 0.060 0.074 -2.128 0.034304008 0.055406852
-## --> mutation in these genes protect the spontaneous or enzymatic deamination of 5-methylcytosine to thymine
-
-## SBS2
-https://cancer.sanger.ac.uk/signatures/sbs/sbs2/
-  n1  n2  avg1  avg2 tscore         pt         pw
-CREBBP_mut          37 272 0.224 0.266 -2.185 0.03361776 0.03937055
-CREBBP_delmut       61 248 0.233 0.268 -2.111 0.03733973 0.03913539
-
-## SBS5
-https://cancer.sanger.ac.uk/signatures/sbs/sbs5/
-  n1  n2  avg1  avg2 tscore          pt          pw
-CREBBP_del          30 279 0.453 0.321  3.148 0.003390694 0.001653681
-CREBBP_delmut       61 248 0.406 0.316  3.035 0.003146955 0.001267301
-
-# SBS2 + SBS13 (APOBEC)
-n1  n2  avg1  avg2 tscore         pt          pw
-CREBBP_delmut       61 248 0.466 0.554 -2.681 0.00866345 0.007183715
-
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ROC of epiRG-aber status to signature scores
 # 1 Choi_data
@@ -2224,57 +1767,6 @@ dev.off()
 
 
 
-#&&&+===. KDM6a-mut methylation diffrence volcano plot
-inf<-"/home/u251079/BLCA_code/BLCA_ms_plots_data/Volcano_KDM6A_met_up_down.csv"
-
-kdm6a<-read.csv(inf, row.names = 1, header = T)
-kdm6a<-na.omit(kdm6a)
-library(ggplot2)
-names(kdm6a)
-kdm6a$log10p<-c(-log10(kdm6a$KDM6A_mut_Q_val_BH))
-
-kdm6a <- kdm6a %>% 
-  mutate(Expression = case_when(KDM6A_mut_mut_wt >= 0 & KDM6A_mut_Q_val_BH <= 0.01 ~ "Up-regulated",
-                                KDM6A_mut_mut_wt <= -0 & KDM6A_mut_Q_val_BH <= 0.01 ~ "Down-regulated",
-                                TRUE ~ "Unchanged"))
-
-legend_counts <- kdm6a %>%
-  group_by(Expression) %>%
-  summarise(Count = n())
-View(legend_counts)
-
-
-p1 <- ggplot(kdm6a, aes(x=KDM6A_mut_mut_wt, y=log10p))+
-  geom_point(aes(color = Expression), size = 2/5) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  geom_hline(yintercept =2, color = "#DC3A17", linetype = "dashed") +
-  labs(title = "Diffrentially methylated CpGs of patients with KDM6A mutation to wild type",
-       x="Difference between means (mut-wild)") +
-  ylab(expression("-log"[10]*"(padj-BH)")) +
-  theme_classic()+
-  #  coord_cartesian( ylim = c(min(data$log10padj),max(data$log10padj)+5))+
-  #xlim=c(-10.5,10.5),
-  scale_color_manual(
-    values = c("firebrick3", "gray50", "dodgerblue3"),
-    labels = c(
-      paste("Up-regulated (", legend_counts[legend_counts$Expression == "Up-regulated", "Count"], ")"),
-      paste("NA"),
-      paste("Down-regulated (", legend_counts[legend_counts$Expression == "Down-regulated", "Count"], ")")
-    )
-  ) +
-  guides(colour = guide_legend(override.aes = list(size = 1.5))) +
-  theme(plot.title = element_text(hjust = 0.5, size = 10),
-        legend.position = "top",
-        legend.title = element_text(size = 6),
-        legend.text = element_text(size = 6))
-
-print(p1)
-
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/Diff_meth_kdm6a.pdf", width = 6, height =5)
-print(p1)
-dev.off()
-
 
 
 
@@ -2309,103 +1801,37 @@ pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/Corr_DNA_meth.pdf", width =
 print(p)
 dev.off()
 
-[8.2] Correlation analysis using signature score to DNA methylation
-rm(list=ls())
-myinf1 = "/mount/ictr1/chenglab/cc59/PubDat/Dataset/Firehose/Methylation/processed/BLCA_Methy450K.rda"
-myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA_Freq_SomaticMutation_epiGenes.txt"
-myinf3 = "/mount/ictr1/chenglab/cc59/PubDat/organisms/human/annotation/GPL16304_illumina_HumanMethy450K_annotation.txt"
 
 
-cpg = read.table(myinf3, sep="\t", header=T, quote="")
-xx = as.character(cpg$HIL_CpG_class)
-names(xx) = cpg$ID
-cpg1 = xx
 
-info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
-se = which(info$KDM6A_mut>0)
-sam.mu = row.names(info)[se]
-se = which(info$KDM6A_mut==0)
-sam.wt = row.names(info)[se]
+[Supplementary Figure SF.3] Boxplot → CREBBP in different stages With Sjodahl_GSE32894_data of 224 patient 
+#@@@@@@@@@@@@@@@ Sjodahl_GSE32894_data with 224 patient clinical and signature information 
+table(info1$stage)
+info1$stage<-ifelse(info1$stage == "T4", "T3", info1$stage)
+# Create a factor with custom levels for T_stage
+info1$stage1 <- factor(info1$stage, levels = c("Ta","T1", "T2", "T3"))
 
-load(myinf1)
-data = mydata
-xx = colnames(data)
-# Assuming 'your_dataframe' is the name of your data frame
-medians <- apply(data,2, median, na.rm=TRUE)
-print(medians)
-names(medians)
-se = which(substr(names(medians), 14, 15)=="01")
-medians<-medians[se]
-names(medians)= substr(names(medians), 1, 12)
+# Calculate the number of samples for each T_stage
+sample_counts <- info1 %>%
+  group_by(stage1) %>%
+  summarise(N = n())
 
-myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA__epiGene_iRAS.txt"
-info <- read.table(myinf2, header=T, sep="\t", row.names=1, quote="", check.names=F)
-data<-info
-cnum = ncol(data)/2
-data = data[, 1:cnum]
-tmp = colnames(data)
-tmp = gsub("\\.ES", "", tmp)
-colnames(data) = tmp
-cnum = ncol(data)/2
-dat1 = data[,1:cnum]
-dat2 = data[, (cnum+1):(2*cnum)]
-xx = dat1-dat2
-colnames(xx) = gsub("\\.up", "", colnames(dat1))
-score =xx
-colnames(score)<-gsub("uni.noj__", "", colnames(score))
-
-score=score[,1:13]
-
-
-xx=intersect(rownames(score), names(medians))
-score=score[xx,]
-medians=medians[xx]
-
-
-medians <- as.matrix(medians)
-score <- as.matrix(score)
-
-corr_meth<-cor(medians, score, method = "spearman")
-plot(corr_meth)
-corr_meth<-as.data.frame(corr_meth)
-rownames(corr_meth)[1]<-"DNA Methylarion"
-heatmap(corr_meth)
-
-# Assuming 'corr' is your vector of correlation coefficients
-corr <- c(ARID1A_mut = -0.11493086, CHD6_mut = -0.16913085, CHD7_mut = 0.08453035, 
-          CREBBP_mut = 0.32817909, EP300_mut = 0.38738692, KDM6A_mut = -0.59146212, 
-          CHD6_amp = -0.55269039, CHD7_amp = -0.54972258, PRDM9_amp = -0.07020391, 
-          CHD3_del = -0.56200671, CREBBP_del = -0.45171140, HDAC4_del = -0.50857248, 
-          PHF23_del = -0.55950554)
-
-# Convert to a data frame for plotting
-corr_df <- data.frame(Gene = names(corr), Correlation = corr)
-
-# Order the data frame by correlation for a more intuitive visualization
-corr_df <- corr_df[order(corr_df$Correlation), ]
-
-# Plotting
-library(ggplot2)
-p<-ggplot(corr_df, aes(x = reorder(Gene, Correlation), y = Correlation, fill = Correlation)) +
-  geom_bar(stat = "identity") +
+plot_box1<- ggplot(info1, aes(stage1, CREBBP_mut_transformed, fill = factor(stage1))) +
+  geom_boxplot() +
+  labs(title = "GSE32894", x = NULL, y = "Signature CREBBP_mut") +
+  coord_cartesian(ylim = c(min(info1$CREBBP_mut_transformed), max(info1$CREBBP_mut_transformed) + 0.5)) +
+  geom_hline(yintercept = mean(info1$CREBBP_mut_transformed), linetype = 2) +
+ # stat_compare_means(method = "anova", label.y = max(info1$CREBBP_mut_transformed)) +
+  stat_compare_means(label = "p.signif", method = "wilcox.test", ref.group = ".all.",
+                     label.y = c(4, 4, 5.5, 5.5)) +
   theme_classic() +
-  coord_flip() + # Flips the axes for better readability of gene names
-  labs(title = "Correlation between epiRG-aber signature score and \n global DNA Methylation", 
-       x = "Gene Aberration", y = "Spearman Correlation Coefficient") +
-  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, 
-                       limit = c(-1, 1), space = "Lab", name="Correlation") +
-  theme(legend.position = "right",
+  theme(legend.position = "none", 
         axis.text.x = element_text(color = "black"),
-        axis.text.y = element_text(color = "black"))
+        plot.title = element_text(hjust = 0.5, size = 10))+
+  scale_x_discrete(labels = c("Ta (n=110)","T1 (n=63)", "T2 (n=43)", "T3 (n=8)"))
 
-# Note: Adjust 'scale_fill_gradient2' parameters as needed to fit your color preference.
-print(p)
-
-pdf("/home/u251079/BLCA_code/BLCA_ms_plots/res_sec_5/Corr_score_DNA_meth.pdf", width = 7, height =4)
-print(p)
-dev.off()
-
-
+print(plot_box1)
+# Save the plot
 
 
 
