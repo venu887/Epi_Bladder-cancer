@@ -1228,6 +1228,14 @@ se= c("CHD6_mut", "CHD7_mut", "CREBBP_mut", "EP300_mut",  "KDM6A_mut","PRDM9_amp
 data1=data[, ! (colnames(data)%in%se)]
 se=c("CHD6_ampmut","CHD7_ampmut","CREBBP_delmut","EP300CREBBP_mut","EP300CREBBP_delmut")
 data1=data1[, !(colnames(data1) %in% se)]
+# normalize the signature scores
+for (i in 1:7) {
+  abs_col <- abs(data1[, i])
+  sd_abs_col <- sd(abs_col, na.rm = TRUE)
+  data1[, i] <- data1[, i] / sd_abs_col
+}
+head(data1)
+
 rownames(data1)<-NULL
 data2<-melt(data1)
 unique(data2$variable)
