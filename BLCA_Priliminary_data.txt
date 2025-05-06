@@ -1,0 +1,920 @@
+# STEP-1 is to download the priliminary data available freely
+# Download information from Firehouse
+myinf1  = "TCGA_FireHose_maf_SomaticMutation_count.rda"
+# Obtain from the Table-2: Epigenetic modulators, modifiers and mediators in cancer aetiology and progression https://www.nature.com/articles/nrg.2016.13
+myinf3 = "Epigenetic_modifier_cancer.txt"
+
+[1.A] check the mutation rate of epifactors as priliminary analysis in all TCGA cancer types 
+rm(list=ls())
+# TCGA_Firehose_MutationProfile_Symbol.rda contain somatic mutation profile of 36 cancer types in TCGA of all protein coding genes
+myinf1 = "TCGA_Firehose_MutationProfile_Symbol.rda"
+myinf2 = "Epigenetic_modifier_cancer.txt"
+myoutf1 = "Mutation_rate_All_cancers_EpiMod_TCGA.csv"
+load(myinf1)
+data = mydata
+head(data)
+dim(data)
+#----------------%-----------------------
+mygen<- read.table(myinf2, sep = "\t", header = T, stringsAsFactors = F)
+xxx<-unlist(strsplit(mygen$Gene, ","))
+xxx<-gsub(" ", "", xxx)
+xxx
+#----------------%-----------------------
+# Isolating genes information from 9037 TCGA patient information 
+se=which(row.names(data)%in%xxx)
+data=data[se,]
+xxx=colnames(data)
+nn=length(xxx)
+tmp=unlist(strsplit(xxx, "__"))
+head(tmp)
+mytag=tmp[(1:nn)*2-1]
+can.typ=unique(mytag)
+
+tmp=matrix(0, nrow(data), length(can.typ))
+row.names(tmp)=row.names(data)
+colnames(tmp)=can.typ
+res.count=res.frac= as.data.frame(tmp)
+# calculating for the count for each gene number of mutations and fraction of the mutation in each cancer type
+for (k in 1:length(can.typ)) {
+  cat("\r", k)
+  se= which(mytag==can.typ[k])
+  tmp=data[,se]
+  xx=apply(tmp>0, 1, sum)
+  res.count[,k]=xx
+  res.frac[,k]= xx/length(se)
+  
+}
+# making average of the mutation rate in single gene using sum of the mutations divided by num of columns
+Mut_rate =apply(data>0, 1, sum)/ncol(data)
+res.frac=cbind(res.frac, Mut_rate)
+xx=res.frac[order(res.frac$Mut_rate, decreasing = T),]
+write.table(xx, myoutf1, sep = ",", quote = F)
+
+#_______________________________1.2____________________________
+[1.B] check the mutation rate of in each category
+rm(list = ls())
+myinf1 = "TCGA_Firehose_MutationProfile_Symbol.rda"
+myinf2 = "Epigenetic_modifier_cancer.txt"
+myoutf1 = "Mutation_Num_All_categories_each_cancer_TCGA.csv"
+
+mygen = read.table(myinf2, sep="\t", header=T, stringsAsFactors=F)
+mygen = mygen[,1:2]
+mycat = unique(mygen$Category)
+
+myList=list(NULL)
+for (k in 1:length(mycat)) {
+  se =which(mygen$Category == mycat[[k]])
+  xx = mygen[se, 1]
+  xx = unlist(strsplit(xx, ","))
+  xx = gsub(" ", "", xx)
+  myList[[k]] = xx
+}
+names(myList)=mycat
+count = length(mycat)+1
+myList[[count]]= unique(unlist(myList))
+names(myList)[count]="All"
+mygen= myList[[count]]
+
+###------
+load(myinf1)
+data=mydata
+se = which(row.names(data) %in% mygen)
+length(se)
+data=data[se,]
+xx = colnames(data)
+nn = length(xx)
+tmp = unlist(strsplit(xx, "__"))
+mytag = tmp[(1:nn)*2-1]
+can.typ = unique(mytag)
+
+# Creating a dummy matrix tmp
+tmp = matrix(0, length(can.typ), length(myList),)
+row.names(tmp) = can.typ
+colnames(tmp) = names(myList)
+res.count= res.frac =as.data.frame(tmp)
+
+for (k in 1:length(can.typ)){
+  cat("\r", k)
+  se = which(mytag == can.typ[k])
+  tmp = data[, se]
+  for (i in 1:length(myList)) {
+    se =which(row.names(tmp) %in% myList[[i]])
+    xx = apply(tmp[se,]>0, 2, sum)
+    res.count[k,i] = sum(xx >0)
+    res.frac[k,i] =sum(xx>0)/ncol(tmp)
+    
+  }
+  
+}
+xx=round(res.frac,3)
+write.table(xx, myoutf1, sep = ",", quote = F)
+getwd()
+myoutf1
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[2] Identify genomic event highly occured in BLCA cancers
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[2.1] SM&CNV profiles
+myoutf1 = "TCGA_BLCA_Freq_SomaticMutation_epiGenes.txt"
+mygen = read.table(myinf3, sep="\t", header=T, row.names=1)
+mygen = row.names(mygen)
+mygen = unlist(strsplit(mygen, ", "))
+mygen = gsub(" ", "", mygen)
+mygen_sorted <- mygen[order(mygen)]
+
+# re-generated the data and signature scores after priliminary results with BLCA for validation. 
+mygen= c(mygen, "TP53", "FGFR3", "PIK3CA", "RB1")
+fra.thr = 30
+# SM data of epi genes
+load(file= myinf1)
+data = mydata
+se = grep("BLCA__", colnames(data))
+data = data[, se]
+colnames(data) = gsub("BLCA__", "", colnames(data))
+se = which(row.names(data)%in%mygen)
+data = data[se,]
+xx = apply(data>0, 1, sum) 
+se= which(xx>=fra.thr) 
+data = data[se, ]
+res = t(data)
+xx = rle(sort(row.names(res)))
+xx$lengths
+uni.xx = xx$value[xx$len==1]
+se = which(row.names(res)%in%uni.xx)
+res = res[se, ]
+res.mut = res
+for(k in 1:ncol(res.mut))
+{
+  res.mut[,k] = ifelse(res.mut[,k]>0, 1, 0)
+}
+
+#+++++++++++++++++++++++
+#+#CNV data
+myinf2 = "BLCA_CNV_Symbol.rda"
+load(myinf2)
+data = mydata
+xx = substr(colnames(data), 14, 15)
+se = which(xx=="01")
+data = data[, se]
+colnames(data) = substr(colnames(data), 1, 12)
+se = which(row.names(data)%in%mygen)
+data = data[se,]
+se=which(colnames(data) %in% rownames(res))
+
+amp.thr = log2(2.8/2)
+del.thr = log2(1.4/2)
+amp.num = apply(data>amp.thr, 1, sum) 
+del.num = apply(data<del.thr, 1, sum) 
+
+se= which(amp.num>=fra.thr) 
+tmp = data[se, ] 
+res = t(tmp)
+xx = rle(sort(row.names(res)))
+uni.xx = xx$value[xx$len==1]
+se = which(row.names(res)%in%uni.xx)
+res = res[se, ]
+res.amp = res 
+se= which(del.num>=fra.thr) 
+tmp = data[se, ]
+res = t(tmp) 
+xx = rle(sort(row.names(res)))
+uni.xx = xx$value[xx$len==1]
+se = which(row.names(res)%in%uni.xx)
+res = res[se, ]
+res.del = res
+# assining binary for amplification and deletion data
+for(k in 1:ncol(res.amp))
+{
+  res.amp[,k] = ifelse(res.amp[,k]>amp.thr, 1, 0)
+}
+for(k in 1:ncol(res.del))
+{
+  res.del[,k] = ifelse(res.del[,k]<del.thr, 1, 0)
+}
+apply(res.amp, 2, sum)
+apply(res.del, 2, sum)
+
+#----------------------------------
+comxx = intersect(row.names(res.mut), row.names(res.amp))
+dat.mut = res.mut[comxx,]
+dat.amp = res.amp[comxx,]
+dat.del = res.del[comxx,]
+
+apply(dat.mut, 2, sum)
+apply(dat.amp, 2, sum)
+apply(dat.del, 2, sum)
+
+##--------------------
+## derive feature
+EP300CREBBP_mut = ifelse(dat.mut[, "EP300"]+ dat.mut[, "CREBBP"]>0, 1, 0)
+dat4 =  EP300CREBBP_mut
+apply(dat4, 2, sum)
+colnames(dat.mut) = paste(colnames(dat.mut), "_mut", sep="")
+colnames(dat.amp) = paste(colnames(dat.amp), "_amp", sep="")
+colnames(dat.del) = paste(colnames(dat.del), "_del", sep="")
+data = cbind(dat.mut, dat.amp, dat.del, dat4)
+write.table(data, myoutf1, sep="\t", quote=F)
+apply(data>0, 2, sum, na.rm=T)
+
+
+#---------------------------
+# gene expression data and normalization 
+load(file= myinf1)
+data = mydata	## 
+xx = apply(data>0, 1, sum)
+se = which(xx>=10)
+data = data[se,]
+data = log10(data+1)
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+comSam = intersect(colnames(data), row.names(info))
+data = data[, comSam]
+info = info[comSam,]
+raw.info = info
+raw.data = data
+#~~~~~~~~~~~~~~~~~~~~
+tmp = matrix(0, nrow(data), ncol(soma))
+row.names(tmp) = row.names(data)
+colnames(tmp) = colnames(soma)
+p1 = p2 = p3 = p4  =  tmp
+#  mylog <- lm(mytf ~ mut, data = xx) calculating the univariate scors according to the gene expressin fit into linear model
+for(s in 1:ncol(soma))
+{
+  mut = row.names(soma)[soma[,s]>0]
+  wt =  row.names(soma)[soma[,s]==0]	
+  mut = mut[mut%in%colnames(data)]
+  wt = wt[wt%in%colnames(data)]
+  xx = c(mut, wt)
+  info = raw.info[xx, ]
+  data = raw.data[, xx]
+  mut = ifelse(row.names(info)%in%wt, 0, 1)
+  info = cbind(mut, info)
+  
+  pval1 = beta1 = rep(0, nrow(data))
+  pval2 = beta2 = rep(0, nrow(data))
+}
+#--------------------------
+
+# Extracting the data set according to the calculated uni variate analysis
+res = p1
+res1 = res2 = res
+for(k in 1:ncol(res))
+{
+  tmp = res[,k]
+  tmp1 = ifelse(tmp>0, tmp, 0)
+  tmp1[tmp1>10] = 10
+  res1[,k] = tmp1
+  tmp2 = ifelse(tmp<0, -tmp, 0)
+  tmp2[tmp2>10] = 10
+  res2[,k] = tmp2
+}
+colnames(res1)= paste(colnames(res1), ".up", sep="")
+colnames(res2)= paste(colnames(res2), ".dn", sep="")
+myres = cbind(res1, res2)
+row.names(myres) = row.names(res)
+colnames(myres) = paste("uni.noj", colnames(myres), sep="__")
+minv = min(myres)
+maxv = max(myres)
+myres = (myres-minv)/(maxv-minv)
+prof1 = myres
+
+#------------------------------------------------------------
+profile = prof1
+se1 = grep("\\.up", colnames(profile))
+se2 = grep("\\.dn", colnames(profile))
+profile = profile[, c(se1, se2)]
+dim(profile)	
+write.table(profile, myoutf1, sep="\t", quote=F)
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[3] generation of Signature scores for survival analysis for all datasets Prognostic Prediction 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[3.1] TCGA BLCA gene expression data from Firehouse
+myinf1 = "BLCA_RNAseqv2_Tumor_Symbol.rda"
+myinf2 = "TCGA-BLCA-epiGene-Profile_4base_09_17.txt"
+myoutf = "TCGA_BLCA__epiGene_iRAS_09_17.txt"
+
+#---------------------------
+load(file= myinf1)
+data = mydata	
+xx = apply(data>0, 1, sum)
+se = which(xx>=10)
+data = data[se,]
+data = log10(data+1)
+reg = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+
+# Fallowed the algorithm # https://link.springer.com/article/10.1186/1471-2105-8-452
+# Inferring activity changes of transcription factors by binding association with sorted expression profiles
+source("base5.R") 
+xx = base5(data, reg, perm=1000, myoutf, median.norm=T)
+# Out put as a priliminary signatures for epiRG
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[3.2] Others data sets repeat same way
+# Choi_GSE48277", "Sjodahl_GSE32894",  "Lee_GSE13507"
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[3.3] test the method is working, evaluate the ability of the signature for distingishing mutant vs. wild-type
+rm(list = ls())
+myinf1 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/Choi_GSE48277_GPL6947__GenomicEvent_iRAS.txt"
+myinf2 = "/mount/ictr1//chenglab/cc59/PubDat/Cancer/Bladder/Choi_GSE48277/Clinical_info_GPL6947.txt" 
+
+data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+data = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+info = info[!is.na(info$survival.mo), ]
+t.dfs = info[, "survival.mo"]
+e.dfs = info[, "os.censor"]
+e.dfs = ifelse(e.dfs=="uncensored", 1, 0)
+t.dfs = as.numeric(t.dfs)
+info = cbind(t.dfs, e.dfs, info)
+info = info[!is.na(info[, "t.dfs"]), ]
+info = info[info[, "t.dfs"]>0, ]
+
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+
+#-----------------------
+se = which(info$fgfr3.mutation ==1)
+xx1 = as.numeric(data$uni.noj__FGFR3__MUT[se])
+se = which(info$fgfr3.mutation==0)
+xx2 = as.numeric(data$uni.noj__FGFR3__MUT[se])
+boxplot(list(xx1,xx2))
+wilcox.test(xx1, xx2, alternative="g")
+write.csv(df,"chao_box.csv", row.names = F)
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[4] Survival analysis
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[4.1] Survival Analysis
+library(survival)
+library(survminer)
+rm(list=ls())
+myinf1 = "TCGA_BLCA__epiGene_iRAS.txt"
+myinf2 = "BLCA_Clincial_info.txt"
+
+data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+data = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+se = c("vital_status", "days_to_death", "days_to_last_followup", "age_at_initial_pathologic_diagnosis", "gender", "stage_event.pathologic_stage", "number_pack_years_smoked")
+info = info[,se]
+xx = ifelse(!is.na(info$days_to_death), info$days_to_death, info$days_to_last_followup)
+t.surv = as.numeric(xx)
+e.surv = ifelse(info[, "vital_status"]=="dead", 1, 0)
+info = cbind(t.surv, e.surv, info)
+info = info[!is.na(info$t.surv), ]
+xx = as.character(info$stage_event.pathologic_stage)
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+
+survreg.pval1 = survreg.pval2 = coxph.pval1 = coxph.pval2 =rep(0, ncol(data))
+hr1 = lb1 = ub1 = hr2 =lb2 = ub2 = rep(0, ncol(data))
+for(k in 1:ncol(data))
+{
+  cat("\r", k)
+  mytf = as.numeric(data[,k])
+  xx = cbind(mytf, info)
+  xx = xx[xx[, "t.surv"]>0,]
+  mycox = survreg(Surv(t.surv, e.surv)~mytf, xx) 
+  mycox = summary(mycox)$table
+  survreg.pval1[k] = mycox["mytf", "p"]
+  mycox = coxph(Surv(t.surv, e.surv)~mytf, xx) 
+  mycox = summary(mycox)
+  coxph.pval1[k] = mycox$coefficients[5]
+  tmp = mycox$conf.int
+  hr1[k] = tmp[1]
+  lb1[k] = tmp[3]
+  ub1[k] = tmp[4]
+}
+survreg.qval1 = p.adjust(survreg.pval1, "BH")
+coxph.qval1 = p.adjust(coxph.pval1, "BH")
+
+res = data.frame(surv.p = survreg.pval1,  coxph.p = coxph.pval1,  HR=hr1)
+row.names(res) = colnames(data)
+res= round(res, digits = 3)
+res_TCGABLCA=res
+colnames(res_TCGABLCA)
+colnames(res_TCGABLCA)<-c("TCGA_surv.p", "TCGA_coxph.p", "TCGA_HR")
+myoutf = "Survival_Cox.csv"
+write.csv(res, myoutf)
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[4.1] Sjodahl_GSE32894
+rm(list=ls())
+library(survival)
+myinf1 = "Sjodahl_GSE32894_GPL6947__epiGene_iRAS.txt" # Signature scores from BASE
+myinf2 = "Sjodahl_GSE32894/Clinical_info.txt" 
+data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+data = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+info = info[!is.na(info$dod_event), ]
+t.dfs = info[, "time_to_dod_months"]
+e.dfs = info[, "dod_event"]
+e.dfs = ifelse(e.dfs=="yes", 1, 0)
+t.dfs = as.numeric(t.dfs)
+info = cbind(t.dfs, e.dfs, info)
+info = info[!is.na(info[, "t.dfs"]), ]
+info = info[info[, "t.dfs"]>0, ]
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+
+#-------------
+#Convert signature scores to Z-scores then use cox and calculate HZ, calculation of z-scores for signatures 
+sig_mean = apply(data, 2, mean, na.rm=T)
+sig_sd = apply(data, 2, sd, na.rm=T)
+z_scores = matrix(0, nrow = nrow(data), ncol = ncol(data))
+row.names(z_scores)<- rownames(data)
+colnames(z_scores)<-colnames(data)
+for (k in 1:ncol(data)) {
+  cat("\r", k)
+  z_scores[, k] = (data[, k] - sig_mean[k]) / sig_sd[k]
+}
+class(z_scores)
+z_scores<-as.data.frame(z_scores)
+data=z_scores
+write.csv(data, "/home/u251079/BLCA_code/BLCA_ms_plots/Z_scores_Sjodahl_GSE32894.csv")
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[4.2] GSE13507
+rm(list=ls())
+myinf1 = "/home/u251079/r_program/data/GSE13507_GPL6102_Bladder_Kim__epiGene_iRAS.txt"
+myinf2 = "/mount/ictr1//chenglab/cc59/PubDat/Cancer/Bladder/Lee_GSE13507/GSE13507_clinical_info.txt" 
+
+data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+data = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=2, quote="")
+t.surv = info[, "survivalMonth"]
+e.surv = info[, "progression"]
+info = cbind(t.surv, e.surv, info)
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+
+#-------------
+# Convert signature scores to Z-scores then use cox and calculate HZ, calculation of z-scores for signatures 
+sig_mean = apply(data, 2, mean, na.rm=T)
+sig_sd = apply(data, 2, sd, na.rm=T)
+z_scores = matrix(0, nrow = nrow(data), ncol = ncol(data))
+row.names(z_scores)<- rownames(data)
+colnames(z_scores)<-colnames(data)
+for (k in 1:ncol(data)) {
+  cat("\r", k)
+  z_scores[, k] = (data[, k] - sig_mean[k]) / sig_sd[k]
+}
+class(z_scores)
+z_scores<-as.data.frame(z_scores)
+data=z_scores
+write.csv(data, "Z_scores_GSE13507.csv")
+#------------
+
+library(survival)
+survreg.pval1 = survreg.pval2 = coxph.pval1 = coxph.pval2 =rep(0, ncol(data))
+hr1 = lb1 = ub1 = hr2 =lb2 = ub2 = rep(0, ncol(data))
+for(k in 1:ncol(data))
+{
+  cat("\r", k)
+  mytf = as.numeric(data[,k])
+  xx = cbind(mytf, info)
+  xx = xx[xx[, "t.surv"]>0,]
+  mycox = survreg(Surv(t.surv, e.surv)~mytf, xx) 
+  mycox = summary(mycox)$table
+  survreg.pval1[k] = mycox["mytf", "p"]
+  mycox = coxph(Surv(t.surv, e.surv)~mytf, xx) 
+  mycox = summary(mycox)
+  coxph.pval1[k] = mycox$coefficients[5]
+  tmp = mycox$conf.int
+  hr1[k] = tmp[1]
+  lb1[k] = tmp[3]
+  ub1[k] = tmp[4]
+}
+survreg.qval2 = p.adjust(survreg.pval1, "BH")
+coxph.qval2 = p.adjust(coxph.pval1, "BH")
+res = data.frame(surv.p = survreg.pval1,  coxph.p = coxph.pval1, surv.p_BH=survreg.qval2, coxph.p_BH=coxph.qval2,  HR=hr1)
+row.names(res) = colnames(data)
+colnames(res)<-c("GSE13507_surv.p","GSE13507_coxph.p","GSE13507_surv.p_BH", "GSE13507_coxph.p_BH","GSE13507_HR")
+
+library(ggplot2)
+data1=apply(data, 2, function(cel){
+  median_col=median(cel)
+  ifelse(cel>=median_col,1,0)
+})
+data1<-as.data.frame(data1)
+data2<-data1 %>% select(starts_with("uni.noj__"))
+colnames(data2)<- gsub("uni.noj__","", colnames(data2))
+data2<-cbind(data,data2, info)
+write.csv(data2, "/home/u251079/BLCA_code/BLCA_ms_plots_data/GSE13507_data_for_KM.csv")
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[4.3] Choi_GSE48277
+rm(list=ls())
+myinf1 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/Choi_GSE48277_GPL6947__epiGene_iRAS.txt"
+myinf2 = "/mount/ictr1//chenglab/cc59/PubDat/Cancer/Bladder/Choi_GSE48277/Clinical_info_GPL6947.txt" 
+
+data <- read.table(myinf1, header=T, sep="\t", row.names=1, quote="")
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+data = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+info = info[!is.na(info$survival.mo), ]
+t.dfs = info[, "survival.mo"]
+e.dfs = info[, "os.censor"]
+e.dfs = ifelse(e.dfs=="uncensored", 1, 0)
+t.dfs = as.numeric(t.dfs)
+info = cbind(t.dfs, e.dfs, info)
+info = info[!is.na(info[, "t.dfs"]), ]
+info = info[info[, "t.dfs"]>0, ]
+
+comSam = intersect(row.names(info), row.names(data))
+data = data[comSam,]
+info = info[comSam,]
+
+survreg.pval1 = survreg.pval2 = coxph.pval1 = coxph.pval2 =rep(0, ncol(data))
+hr1 = lb1 = ub1 = hr2 =lb2 = ub2 = rep(0, ncol(data))
+for(k in 1:ncol(data))
+{
+  cat("\r", k)
+  mytf = as.numeric(data[,k])
+  xx = cbind(mytf, info)
+  xx = xx[xx[, "t.dfs"]>0,]
+  mycox = survreg(Surv(t.dfs, e.dfs)~mytf, xx) 
+  mycox = summary(mycox)$table
+  survreg.pval1[k] = mycox["mytf", "p"]
+  mycox = coxph(Surv(t.dfs, e.dfs)~mytf, xx) 
+  mycox = summary(mycox)
+  coxph.pval1[k] = mycox$coefficients[5]
+  tmp = mycox$conf.int
+  hr1[k] = tmp[1]
+  lb1[k] = tmp[3]
+  ub1[k] = tmp[4]
+}
+survreg.qval1 = p.adjust(survreg.pval1, "BH")
+coxph.qval1 = p.adjust(coxph.pval1, "BH")
+
+res = data.frame(surv.p = survreg.pval1,  coxph.p = coxph.pval1,  HR=hr1)
+row.names(res) = colnames(data)
+res
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[5] corr with immotherpay
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[5.1] association with immunotherapy
+# We have downloaded data from Thorsson et al paper "The Immune Landscape of Cancer" https://pubmed.ncbi.nlm.nih.gov/29628290/
+# epiRG-aber signature scores impact on Imm infiltration
+myinf1 <- "Thorsson_2018_TCGA_immunelandscape.csv"
+myinf2 = "TCGA_BLCA__epiGene_iRAS.txt"
+
+data <- read.table(myinf2, header=T, sep="\t", row.names=1, quote="", check.names=F)
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2 
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+score =xx 
+#------------------------
+data1 = read.table(myinf1, sep=",", header=T, row.names=1, quote="")
+se = which(data1$TCGA.Study=="BLCA")
+data1 = data1[se,]
+names(data1)[1:3]
+names(data1)[32:35]
+se = c(4:31, 36:63)
+data1 = data1[,se]
+se2<-c("Proliferation","Leukocyte.Fraction","Stromal.Fraction","Lymphocyte.Infiltration.Signature.Score","TGF.beta.Response", "TCR.Richness", "BCR.Richness","Macrophage.Regulation")
+1. **Proliferation**:
+  - Proliferation refers to the process of cell division and reproduction, leading to an increase in the number of cells. In the context of cancer, high proliferation rates can indicate aggressive tumor behavior and poor prognosis.
+2. **Leukocyte Fraction**:
+  - Leukocytes, also known as white blood cells, are a crucial component of the immune system. The leukocyte fraction typically refers to the proportion or percentage of leukocytes in a sample, such as blood or tumor tissue. Changes in leukocyte fraction can indicate immune system activation or infiltration into tissues, which is relevant in the context of immune responses to cancer.
+3. **Stromal Fraction**:
+  - The stroma is the supportive connective tissue framework within an organ or tissue, providing structural support and facilitating interactions between cells. The stromal fraction refers to the proportion of stromal cells within a tissue sample. Changes in stromal fraction can be associated with alterations in tissue architecture and microenvironment, which can influence tumor growth and behavior.
+4. **Macrophage Regulation**:
+  - Macrophages are a type of white blood cell that plays a key role in immune responses and tissue homeostasis. Macrophage regulation likely refers to the modulation or control of macrophage activity within a biological system. Macrophages can have both pro-tumor and anti-tumor functions depending on their activation state and the context of the tumor microenvironment.
+5. **Lymphocyte Infiltration Signature Score**:
+  - Lymphocytes are a type of white blood cell involved in adaptive immune responses. The lymphocyte infiltration signature score is a quantitative measure of the presence and activity of lymphocytes within a tissue sample, particularly in the context of tumor-infiltrating lymphocytes (TILs). High lymphocyte infiltration is often associated with better prognosis in cancer patients due to enhanced anti-tumor immune responses.
+6. **TGF-beta Response**:
+  - Transforming growth factor-beta (TGF-beta) is a cytokine involved in various cellular processes, including cell growth, differentiation, and immune regulation. TGF-beta response refers to the cellular or tissue-level response to TGF-beta signaling. Dysregulation of TGF-beta signaling pathway is implicated in cancer progression and immune evasion.
+7. **TCR Richness**:
+  - TCR (T-cell receptor) richness refers to the diversity of T-cell receptor sequences within a population of T-cells. TCR diversity is crucial for recognizing a wide range of antigens, including those derived from tumor cells. Higher TCR richness is often associated with better immune surveillance and response to tumors.
+8. **BCR Richness**:
+  - BCR (B-cell receptor) richness is analogous to TCR richness but refers to the diversity of B-cell receptor sequences within a population of B-cells. BCR diversity is important for recognizing and responding to a wide array of antigens, including those associated with tumor cells. Similar to TCR richness, higher BCR richness may indicate better immune responsiveness against tumors.
+
+data1<-data1[,se2]
+comxx = intersect(row.names(score), row.names(data1))
+data1 = data1[comxx,]
+score = score[comxx,]
+dim(data1)
+
+#@@@@@@@@@@@@ Corrlation analysis only using of 13 aberrations
+score1=score[,1:13]
+colnames(score1)<-gsub("uni.noj__","",colnames(score1))
+comxx = intersect(row.names(score1), row.names(data1))
+data1 = data1[comxx,]
+score1 = score1[comxx,]
+
+# calculation of z-scores for signatures, Calculate the mean and standard deviation for each column
+sig_mean = apply(data1, 2, mean, na.rm=T)
+sig_sd = apply(data1, 2, sd, na.rm=T)
+z_scores = matrix(0, nrow = nrow(data1), ncol = ncol(data1))
+row.names(z_scores)<- rownames(data1)
+colnames(z_scores)<-colnames(data1)
+for (k in 1:ncol(data1)) {
+  cat("\r", k)
+  z_scores[, k] = (data1[, k] - sig_mean[k]) / sig_sd[k]
+}
+class(z_scores)
+z_scores<-as.data.frame(z_scores)
+data1=z_scores
+
+dim(data1)	
+xx = cor(data1, score1, method="s", use="pair")
+heatmap(xx, Colv  = NA)
+
+library(pheatmap)
+p<-pheatmap(
+  xx,
+  cluster_cols = F,
+  cluster_rows = F,
+  cellwidth = 15,  
+  cellheight = 15,
+  main = "Signature score of epiRG \n correlation with immune system",
+  fontsize_row = 8, 
+  fontsize_col = 8  
+)
+
+rownames(xx)
+xx2<-xx["Leukocyte.Fraction",]
+class(xx2)
+xx2= xx2[1:18]
+p<-ggplot(xx2, aes(value, rownames(xx2))) +
+  geom_point()
+print(p)
+
+# Corr__________________plot
+xx1=as.matrix(xx1)
+xx2=melt(xx1)
+xx2 <- xx2 %>% arrange(desc(value))
+heatmap_plot <- ggplot(xx1, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(colour = "black") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+  coord_fixed() +
+  theme_minimal() +
+  labs(title = "Correlation with Thorsson Immunelandscape",
+       x = "Epigene Signature", y = "Immunelandscape Score") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(plot.title = element_text(size = 14, hjust = 0.5)) +
+  theme(axis.title = element_text(size = 12)) +
+  theme(axis.text = element_text(size = 10)) +
+  theme(legend.title = element_blank(), legend.text = element_text(size = 10))
+
+print(heatmap_plot)
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Data for volcano plots
+# calculation of z-scores 
+z_scores= apply((data1-mean(data1))/SD(data1))
+z_scores <- (data1 - mean(data1)) / sd(data1)
+# Calculate the mean and standard deviation for each column
+sig_mean = apply(data1, 2, mean, na.rm=T)
+sig_sd = apply(data1, 2, sd, na.rm=T)
+z_scores = matrix(0, nrow = nrow(data1), ncol = ncol(data1))
+row.names(z_scores)<- rownames(data1)
+colnames(z_scores)<-colnames(data1)
+for (k in 1:ncol(data1)) {
+  cat("\r", k)
+  z_scores[, k] = (data1[, k] - sig_mean[k]) / sig_sd[k]
+}
+class(z_scores)
+z_scores<-as.data.frame(z_scores)
+write.csv(z_scores, "Thorsson_2018_TCGA_immunelandscape_Z_scores.csv")
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[5.2] correlation with Timer
+rm(list=ls())
+myinf1 = "Timer_TCGA_TIL_score.txt" # Download the data from TIMER dataset for Bladder cancer 
+myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA__epiGene_iRAS.txt"
+
+data <- read.table(myinf2, header=T, sep="\t", row.names=1, quote="", check.names=F)
+cnum = ncol(data)/2
+data = data[, 1:cnum]
+tmp = colnames(data)
+tmp = gsub("\\.ES", "", tmp)
+colnames(data) = tmp
+cnum = ncol(data)/2
+dat1 = data[,1:cnum]
+dat2 = data[, (cnum+1):(2*cnum)]
+xx = dat1-dat2
+colnames(xx) = gsub("\\.up", "", colnames(dat1))
+score =xx
+
+data = read.table(myinf1, sep="\t", header=T, row.names=1)
+se = which(substr(row.names(data), 14, 15)=="01")
+data = data[se,]
+Erow.names(data) = substr(row.names(data), 1, 12)
+Timer_data<- data
+
+comxx = intersect(row.names(data), row.names(score))
+data = data[comxx,]
+score = score[comxx,]
+score= score[,1:18]
+names(score)
+colnames(score)<-gsub("uni.noj__", "", colnames(score))
+score=score[,!(colnames(score) %in% se)]
+xx=cor(score, data, method="s")
+write.csv(xx, "/home/u251079/BLCA_code/BLCA_ms_plots_data/Corr_Timer_TCGA_TIL_score.csv")
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[6] effect on DNA methylation data
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[6.1] significant ones
+rm(list=ls())
+myinf1 = "BLCA_Methy450K.rda" # Download data from TCGA Firehouse
+myinf2 = "/mount/ictr1/chenglab/cc59/WorSpa/m1_cancer/BladderCancer/IntGen/data/TCGA_BLCA_Freq_SomaticMutation_epiGenes.txt"
+myinf3 = "/mount/ictr1/chenglab/cc59/PubDat/organisms/human/annotation/GPL16304_illumina_HumanMethy450K_annotation.txt"
+
+cpg = read.table(myinf3, sep="\t", header=T, quote="")
+xx = as.character(cpg$HIL_CpG_class)
+names(xx) = cpg$ID
+cpg = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+#@@@@@@@@
+load(myinf1)
+data = mydata
+xx = colnames(data)
+se = which(substr(xx, 14,15)=="01")
+data = data[,se]
+colnames(data) = substr(colnames(data), 1, 12)
+
+tmp = matrix(0, nrow(data), ncol(info))
+row.names(tmp) = row.names(data)
+colnames(tmp) = colnames(info)
+t.mat = q.mat =mean_mut_wt= tmp
+
+for(k in 1:ncol(info))
+{
+  cat("\r", k)
+  se = which(info[,k]>0)
+  sam.mu = row.names(info)[se]
+  se = which(info[,k]==0)
+  sam.wt = row.names(info)[se]
+  
+  se = which(colnames(data)%in%sam.mu)
+  dat1 = data[,se]
+  se = which(colnames(data)%in%sam.wt)
+  dat2 = data[,se]
+  
+  myavg1 = apply(dat1, 1, mean)
+  myavg2 = apply(dat2, 1, mean)
+  mean_mut_wt[,k] = myavg1-myavg2
+  myvar1 = apply(dat1, 1, var)
+  myvar2 = apply(dat2, 1, var)
+  n1 = ncol(dat1)
+  n2 = ncol(dat2)
+  tscore = (myavg1-myavg2)/sqrt(myvar1/n1+myvar2/n2)
+  df= (myvar1/n1+myvar2/n2)^2/((myvar1/n1)^2/(n1-1) + (myvar2/n2)^2/(n2-1))
+  pval = pt(-abs(tscore), df)*2
+  qval = p.adjust(pval, method="BH")
+  t.mat[,k] = tscore
+  q.mat[,k] = qval
+}
+
+#@@@@@@@@@@@@@
+se<-"KDM6A_mut"
+q.mat1<-q.mat[,se]
+mean_mut_wt1<-mean_mut_wt[,se]
+kdm6a_data<-cbind(q.mat1,mean_mut_wt1)
+colnames(kdm6a_data)<- c("KDM6A_mut_Q_val_BH","KDM6A_mut_mut_wt")
+
+write.csv(kdm6a_data,"Volcano_KDM6A_met_up_down.csv")
+
+xx1 = apply(t.mat>0 & q.mat<0.01, 2, sum, na.rm=T)
+xx2 = apply(t.mat<0 & q.mat<0.01, 2, sum, na.rm=T)
+res = data.frame(up=xx1, dn=xx2)
+res$Total_CpGs<- ifelse(res$up >= 457777, NA, 457777)
+
+# Calculate percentages
+res$up_percentage <- (res$up / (res$up + res$dn)) * 100
+res$dn_percentage <- (res$dn / (res$up + res$dn)) * 100
+res$Diff_percent<-abs(res$up_percentage-res$dn_percentage)
+
+library(reshape)
+class(res)
+res1= as.matrix(res)
+data_melt<- melt(res1)
+class(data_melt)
+colnames(data_melt) <- c('Epi_gene','DE_CpGs','Num_CpGs')
+data_melt1<-data_melt[,c(2,1,3)]
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[8.2] meidan CpG levels
+rm(list=ls())
+myinf1 = "BLCA_Methy450K.rda"
+myinf2 = "TCGA_BLCA_Freq_SomaticMutation_epiGenes.txt"
+myinf3 = "GPL16304_illumina_HumanMethy450K_annotation.txt"
+cpg = read.table(myinf3, sep="\t", header=T, quote="")
+xx = as.character(cpg$HIL_CpG_class)
+names(xx) = cpg$ID
+cpg1 = xx
+
+info = read.table(myinf2, sep="\t", header=T, row.names=1, quote="")
+se = which(info$KDM6A_mut>0)
+sam.mu = row.names(info)[se]
+se = which(info$KDM6A_mut==0)
+sam.wt = row.names(info)[se]
+
+load(myinf1)
+data = mydata
+xx = colnames(data)
+se = which(substr(xx, 14,15)=="01")
+data = data[,se]
+colnames(data) = substr(colnames(data), 1, 12)
+
+res = matrix(0, ncol(info))
+row.names(res) = colnames(info)
+res = as.data.frame(res)
+
+for(k in 1:nrow(res))
+{
+  cat("\r", k)
+  se = which(info[,k]>0)
+  sam.mu = row.names(info)[se]
+  sam.wt = row.names(info)[-se]
+  xx1 = mys[names(mys)%in%sam.mu]
+  xx2 = mys[names(mys)%in%sam.wt]
+  res[k,1] = mean(xx1)
+  res[k,2] = mean(xx2)
+  res[k,3]= log2(res[k,1] / res[k,2])
+  tmp = t.test(xx1, xx2)
+  res[k,4] = tmp$statistic
+  res[k,5] = tmp$p.value
+  tmp = wilcox.test(xx1, xx2)
+  res[k,6] = tmp$p.value	
+  res[k,7] = median(xx1)
+  res[k,8] = median(xx2)
+  res[k,9]= log2(res[k,7] / res[k,8])
+}
+res
+colnames(res) = c("Avg.mu", "Avg.wt", "Mean_Log2FC","t-score", "P.t", "P.w", "Median.MU", "Median.WT", "Median_Log2FC")
+write.csv(res, "Global_median_mean_CpG.csv")
+
